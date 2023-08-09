@@ -1,0 +1,4 @@
+linters: with_defaults(
+    line_length_linter=NULL,
+    trailing_whitespace_linter=NULL
+    )
