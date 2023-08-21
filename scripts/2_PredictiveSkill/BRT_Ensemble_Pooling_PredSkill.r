@@ -1,13 +1,15 @@
 # BRT ensemble and pooling
 
-library(tidyverse)
-library(raster)
-library(zoo)
-library(here)
-library(dismo)
+library(tidyverse, lib.loc = "~/bsh_ISDM/R_packages")
+library(raster, lib.loc = "~/bsh_ISDM/R_packages")
+library(zoo, lib.loc = "~/bsh_ISDM/R_packages")
+library(here, lib.loc = "~/bsh_ISDM/R_packages")
+library(dismo, lib.loc = "~/bsh_ISDM/R_packages")
+library(Metrics, lib.loc = "~/bsh_ISDM/R_packages")
+library(caret, lib.loc = "~/bsh_ISDM/R_packages")
 library(sf)
 sf_use_s2(FALSE) # need to do this to remove spherical geometry
-source(here("scripts", "functions","collinearity.r"))
+source(here("scripts", "functions","collinearity.r")) # find out how here works on the farm
 
 # load NWA shapefile
 NWA <- here("data","shapefiles","NWA.shp") %>% 
@@ -139,7 +141,7 @@ collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity)
 source(here("scripts","functions", "BRT_ensemble_skill.r"))
 
 bsh_ensemble <- BRT_ensemble_skill(dataInput = bsh_all, 
-                            gbm.x = c(8:17), 
+                            gbm.x = c(8,11,13:17), 
                             gbm.y=1, learning.rate = 0.005, 
                             bag.fraction = 0.75, tree.complexity = 5,
                             k_folds = 2, repeats = 10,
@@ -155,10 +157,11 @@ saveRDS(bsh_ensemble, here("results","BRT_ensemble_skill.rds"))
 source(here("scripts","functions", "BRT_pooling_skill.r"))
 
 bsh_pooling <- BRT_pooling_skill(dataInput = bsh_all, 
-                            gbm.x = c(8:17), 
+                            gbm.x = c(8,11,13:17), 
                             gbm.y=1, learning.rate = 0.005, 
                             bag.fraction = 0.75, tree.complexity = 5,
                             k_folds = 2, repeats = 10,
                             n_trees = 2000)
 
 saveRDS(bsh_pooling, here("results","BRT_pooling_skill.rds"))
+
