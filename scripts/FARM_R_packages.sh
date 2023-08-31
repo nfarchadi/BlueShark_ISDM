@@ -21,6 +21,7 @@
 # mail alerts at the begining and end of job
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
 
 # send mail here
 #SBATCH --mail-user=nfarchadi@sdsu.edu
