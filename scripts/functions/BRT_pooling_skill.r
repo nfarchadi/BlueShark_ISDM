@@ -38,7 +38,7 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
 
       # predict and evaluate
       preds_pooling <- gbm::predict.gbm(brt.k, test,
-                                n.trees=brt.etag$gbm.call$best.trees,
+                                n.trees=brt.k$gbm.call$best.trees,
                                 type="response")
       
       
@@ -136,7 +136,7 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       
       
       # all evaluation
-      d <- cbind(testCombine %>% pull(gbm.y), preds_pooling)
+      d <- cbind(test %>% pull(gbm.y), preds_pooling)
       pres <- as.numeric(d[d[,1]==1,2])
       abs <- as.numeric(d[d[,1]==0,2])
       e <- dismo::evaluate(p=pres, a=abs)
@@ -146,12 +146,12 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       Evaluations_kfold_BRT[counter,3] <- R2
       Evaluations_kfold_BRT[counter,4] <- e@auc
       Evaluations_kfold_BRT[counter,5] <- max(e@TPR + e@TNR-1)
-      Evaluations_kfold_BRT[counter,6] <- Metrics::mae(testCombine %>% pull(gbm.y), preds_pooling)
-      Evaluations_kfold_BRT[counter,7] <- Metrics::bias(testCombine %>% pull(gbm.y), preds_pooling)
-      Evaluations_kfold_BRT[counter,8] <- caret::sensitivity(factor((testCombine %>% pull(gbm.y))),factor(round(preds_pooling)))
-      Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((testCombine %>% pull(gbm.y))),factor(round(preds_pooling)))
-      Evaluations_kfold_BRT[counter,10] <- mean(preds_pooling[testCombine[,gbm.y]==0])
-      Evaluations_kfold_BRT[counter,11] <- mean(preds_pooling[testCombine[,gbm.y]==1])
+      Evaluations_kfold_BRT[counter,6] <- Metrics::mae(test %>% pull(gbm.y), preds_pooling)
+      Evaluations_kfold_BRT[counter,7] <- Metrics::bias(test %>% pull(gbm.y), preds_pooling)
+      Evaluations_kfold_BRT[counter,8] <- caret::sensitivity(factor((test %>% pull(gbm.y))),factor(round(preds_pooling)))
+      Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((test %>% pull(gbm.y))),factor(round(preds_pooling)))
+      Evaluations_kfold_BRT[counter,10] <- mean(preds_pooling[test[,gbm.y]==0])
+      Evaluations_kfold_BRT[counter,11] <- mean(preds_pooling[test[,gbm.y]==1])
       Evaluations_kfold_BRT[counter,12] <- i
       Evaluations_kfold_BRT[counter,13] <- "all"
       Evaluations_kfold_BRT[counter,14] <- t3
