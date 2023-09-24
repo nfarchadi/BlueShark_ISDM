@@ -4,3 +4,6 @@
 .Ruserdata
 observer-enhanced_pseudo_1to1.csv
 bsh_observer_enhanced.rds
+bsh_observer_enhanced_clim.rds
+bsh_observer_enhanced_seasonal.rds
+GLORYS
