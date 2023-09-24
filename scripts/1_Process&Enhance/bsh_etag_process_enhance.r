@@ -16,6 +16,7 @@ sf_use_s2(FALSE) # need to do this to remove spherical geometry
 
 source(here("scripts", "functions", "remove_land.r"))
 source(here("scripts","functions","enhance_data.r"))
+source(here("scripts","functions","enhance_data_seasonal.r"))
 
 # load NWA shapefile
 NWA <- here("data","shapefiles","NWA.shp") %>% 
@@ -49,7 +50,7 @@ theme_bw()
 
 # Use one of your environmental rasters as a template. Be sure to have it as the same resolution as what your predicted outputs will be. Most likely this will be the raster with the lowest common resolution.
 
-template<-raster("E:/GLORYS_NWA/monthly_0.08/cmems_mod_glo_phy_my_0.083_P1M-m_1993-01.grd", band = 9) # bathy  
+template<-raster(zz, band = 9) # bathy  
 # hull <- terra::convHull(terra::vect(etag)) %>% as("Spatial") # MCP to retrict locations of pseudo-abs
 # template <- crop(template, hull) %>% mask(hull)
 x<-template
@@ -122,9 +123,9 @@ etag <- etag %>%
 Pres_Abs_etag<-rbind(etag,absences)
 
 
-###################################################
-# enhancing AIS with hycom & bathy data for the NEP
-###################################################
+#############################################################
+# enhancing etag with monthly GLORYS & bathy data for the NWA
+#############################################################
 
 GLORYS_NWA_dir <- "E:/GLORYS_NWA/monthly_0.08"
 
@@ -134,3 +135,63 @@ etag2<-enhance_data(input_df = Pres_Abs_etag, env_dir = GLORYS_NWA_dir, add_erro
 etag2 <- etag2 %>% na.omit()
 
 saveRDS(etag2, here("data","bsh_data","bsh_etag_enhanced.rds"))
+
+
+####################################################################
+# enhancing etag with climotological GLORYS & bathy data for the NWA
+####################################################################
+GLORYS_clim <- here("data","GLORYS","GLORYS_clim.grd") %>% stack()
+
+etag <- here("data","bsh_data","bsh_etag_enhanced.rds") %>% 
+            readRDS() %>%
+            dplyr::select(-X,-Y) %>% 
+            sf::st_drop_geometry()
+
+etag <- etag %>% dplyr::select(1:8) 
+etag.pres <- etag  %>% filter(pres_abs == 1)
+etag.pres.env <- data.frame()
+
+for (j in 1:nrow(etag.pres)){
+    error_grid <- raster::extent(etag.pres[j,"lon"] - etag.pres[j,"longitudeError"],
+                                 etag.pres[j,"lon"] + etag.pres[j,"longitudeError"],
+                                 etag.pres[j,"lat"] - etag.pres[j,"latitudeError"],
+                                 etag.pres[j,"lat"] + etag.pres[j,"latitudeError"])
+    
+    if(!(error_grid[1] == error_grid[2] & error_grid[3] == error_grid[4])){
+        etag.pres.env_mean <- raster::extract(GLORYS_clim, error_grid) %>% as.data.frame() %>% 
+        summarise(across(everything(), mean, na.rm = TRUE))}
+    
+    etag.pres.env <- rbind(etag.pres.env, etag.pres.env_mean)
+        
+}
+
+etag.pres <- cbind(etag.pres, etag.pres.env)
+
+etag.abs <- etag %>% filter(pres_abs == 0)
+etag.abs.env <- raster::extract(GLORYS_clim, etag.abs %>% sf::st_as_sf(coords = c("lon", "lat"), crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+etag.abs <- cbind(etag.abs.env %>% sf::st_coordinates(), etag.abs, etag.abs.env)
+
+# combine
+etag.clim <- rbind(etag.pres, etag.abs)
+saveRDS(etag.clim, here("data","bsh_data","bsh_etag_enhanced_clim.rds"))
+
+
+##############################################################
+# enhancing etag with seasonal GLORYS & bathy data for the NWA
+##############################################################
+
+etag <- here("data","bsh_data","bsh_etag_enhanced.rds") %>% 
+            readRDS() %>%
+            dplyr::select(-X,-Y)
+
+etag <- etag %>% dplyr::select(1:8) %>% mutate(quarter = as.yearqtr(year_mon) + 1/12,
+                                               quarter = format(quarter, "%q") %>% as.numeric())
+
+GLORYS_NWA_dir <- here("data","GLORYS")
+
+# function to enhance AIS data
+etag_seasonal<-enhance_data_seasonal(input_df = etag, env_dir = GLORYS_NWA_dir, add_error = TRUE) #run it!
+
+etag_seasonal <- etag_seasonal %>% na.omit()
+
+saveRDS(etag_seasonal, here("data","bsh_data","bsh_etag_enhanced_seasonal.rds"))
