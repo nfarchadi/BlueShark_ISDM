@@ -122,9 +122,9 @@ observer <- observer %>%
 Pres_Abs_observer<-rbind(observer,absences)
 
 
-###################################################
-# enhancing AIS with hycom & bathy data for the NEP
-###################################################
+#########################################################
+# enhancing observer with GLORYS & bathy data for the NWA
+#########################################################
 
 GLORYS_NWA_dir <- "E:/GLORYS_NWA/monthly_0.08"
 
@@ -134,3 +134,41 @@ observer2<-enhance_data(input_df = Pres_Abs_observer, env_dir = GLORYS_NWA_dir, 
 observer2 <- observer2 %>% na.omit()
 
 saveRDS(observer2, here("data","bsh_data","bsh_observer_enhanced.rds"))
+
+######################################################################
+# enhancing observer with climotological GLORYS & bathy data for the NWA
+######################################################################
+GLORYS_clim <- here("data","GLORYS","GLORYS_clim.grd") %>% stack()
+
+observer <- here("data","bsh_data","bsh_observer_enhanced.rds") %>% 
+            readRDS() %>%
+            dplyr::select(-X,-Y)
+
+observer <- observer %>% dplyr::select(1:6) 
+observer.env <- raster::extract(GLORYS_clim, observer)
+
+observer.clim <- cbind(observer, observer.env)
+
+# combine
+saveRDS(observer.clim, here("data","bsh_data","bsh_observer_enhanced_clim.rds"))
+
+
+##############################################################
+# enhancing observer with seasonal GLORYS & bathy data for the NWA
+##############################################################
+
+observer <- here("data","bsh_data","bsh_observer_enhanced.rds") %>% 
+            readRDS() %>%
+            dplyr::select(-X,-Y)
+
+observer <- observer %>% dplyr::select(1:6) %>% mutate(quarter = as.yearqtr(year_mon) + 1/12,
+                                               quarter = format(quarter, "%q") %>% as.numeric())
+
+GLORYS_NWA_dir <- here("data","GLORYS")
+
+# function to enhance AIS data
+observer_seasonal<-enhance_data_seasonal(input_df = observer, env_dir = GLORYS_NWA_dir, add_error = FALSE) #run it!
+
+observer_seasonal <- observer_seasonal %>% na.omit()
+
+saveRDS(observer_seasonal, here("data","bsh_data","bsh_observer_enhanced_seasonal.rds"))
