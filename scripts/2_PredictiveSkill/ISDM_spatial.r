@@ -214,6 +214,37 @@ mesh_1d_sst <- inla.mesh.1d(seq(minmax(env_rasters$sst)[1,] %>% floor(), minmax(
                             degree = 1) # quadratic (default)
 sst_spde <- inla.spde2.matern(mesh_1d_sst)
 
+#mld
+mesh_1d_mld <- inla.mesh.1d(seq(minmax(env_rasters$mld)[1,] %>% floor(), minmax(env_rasters$mld)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+mld_spde <- inla.spde2.matern(mesh_1d_mld)
+#sst_sd
+mesh_1d_sst_sd <- inla.mesh.1d(seq(minmax(env_rasters$sst_sd)[1,] %>% floor(), minmax(env_rasters$sst_sd)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+sst_sd_spde <- inla.spde2.matern(mesh_1d_sst_sd)
+#ssh_sd
+mesh_1d_ssh_sd <- inla.mesh.1d(seq(minmax(env_rasters$ssh_sd)[1,] %>% floor(), minmax(env_rasters$ssh_sd)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+ssh_sd_spde <- inla.spde2.matern(mesh_1d_ssh_sd)
+#sss_sd
+mesh_1d_sss_sd <- inla.mesh.1d(seq(minmax(env_rasters$sss_sd)[1,] %>% floor(), minmax(env_rasters$sss_sd)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+sss_sd_spde <- inla.spde2.matern(mesh_1d_sss_sd)
+#bathy
+mesh_1d_bathy <- inla.mesh.1d(seq(minmax(env_rasters$bathy)[1,] %>% floor(), minmax(env_rasters$bathy)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+bathy_spde <- inla.spde2.matern(mesh_1d_bathy)
+#rugosity
+mesh_1d_rugosity <- inla.mesh.1d(seq(minmax(env_rasters$rugosity)[1,] %>% floor(), minmax(env_rasters$rugosity)[2,] %>% ceiling(), length.out = 20), 
+                            boundary = "free",
+                            degree = 1) 
+rugosity_spde <- inla.spde2.matern(mesh_1d_rugosity)
+
 ###############
 # Model Formula
 ###############
@@ -222,8 +253,13 @@ form <-  formula(~ -1 +
         intercept_observer(1) + # observer intercept (dataset-specific)
         intercept_marker(1) + # marker intercept (dataset-specific)
         intercept_etag(1) + # etag intercept (dataset-specific)
-        sst_lgcp(f.covar(loc = .data., env = env_rasters[[1]]), model = sst_spde) +
-        #sst(sst, model = sst_spde) + 
+        sst(f.covar(loc = .data., env = env_rasters[[1]]), model = sst_spde) +
+        # mld(f.covar(loc = .data., env = env_rasters[[2]]), model = mld_spde) +
+        # sst_sd(f.covar(loc = .data., env = env_rasters[[3]]), model = sst_sd_spde) +
+        # ssh_sd(f.covar(loc = .data., env = env_rasters[[4]]), model = ssh_sd_spde) +
+        # sss_sd(f.covar(loc = .data., env = env_rasters[[5]]), model = sss_sd_spde) +
+        # bathy(f.covar(loc = .data., env = env_rasters[[6]]), model = bathy_spde) +
+        # rugosity(f.covar(loc = .data., env = env_rasters[[7]]), model = rugosity_spde) +
         etag_field(geometry, model = spde) + 
         marker_field(geometry, copy = "etag_field", fixed = TRUE) + # fixed = F means we want to scale the field by an estimated scalar parameter
         observer_field(geometry, copy = "etag_field", fixed = TRUE))
@@ -243,7 +279,7 @@ train_observer <- train_observer %>% sf::st_as_sf(coords = c("lon", "lat"),
 
 
 like_etag <- like(family = "cp",
-                  formula = geometry ~ Intercept_etag + sst_lgcp + etag_field,
+                  formula = geometry ~ Intercept_etag + sst + etag_field,
                   data = train_etag,
                   samplers = NWA,
                   domain = list(geometry = mesh1),
@@ -253,7 +289,7 @@ like_etag <- like(family = "cp",
                   )
 
 like_marker <- like(family = "cp",
-                    formula = geometry ~ Intercept_marker + sst_lgcp + marker_field,
+                    formula = geometry ~ Intercept_marker + sst + marker_field,
                     data = train_marker,
                     samplers = NWA,
                     domain = list(geometry = mesh1),
@@ -263,7 +299,7 @@ like_marker <- like(family = "cp",
                     )
 
 like_observer <- like(family = "binomial",
-                    formula = pres_abs ~ Intercept_observer + sst_lgcp + observer_field,
+                    formula = pres_abs ~ Intercept_observer + sst + observer_field,
                     data = train_observer,
                     # exclude = c("Intercept_etag", "Intercept_marker", 
                     #             "etag_field", "marker_field", 
