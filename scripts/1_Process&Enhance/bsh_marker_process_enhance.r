@@ -16,7 +16,7 @@ sf_use_s2(FALSE) # need to do this to remove spherical geometry
 
 source(here("scripts", "functions", "remove_land.r"))
 source(here("scripts","functions","enhance_data.r"))
-source(here("scripts","functions","enhance_data_seasonal.r"))
+# source(here("scripts","functions","enhance_data_seasonal.r"))
 
 # load NWA shapefile
 NWA <- here("data","shapefiles","NWA.shp") %>% 
@@ -135,40 +135,43 @@ marker2 <- marker2 %>% na.omit()
 saveRDS(marker2, here("data","bsh_data","bsh_marker_enhanced.rds"))
 
 
-######################################################################
-# enhancing marker with climotological GLORYS & bathy data for the NWA
-######################################################################
-GLORYS_clim <- here("data","GLORYS","GLORYS_clim.grd") %>% stack()
-
-marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% 
-            readRDS() %>%
-            dplyr::select(-X,-Y)
-
-marker <- marker %>% dplyr::select(1:6) 
-marker.env <- raster::extract(GLORYS_clim, marker)
-
-marker.clim <- cbind(marker, marker.env)
-
-# combine
-saveRDS(marker.clim, here("data","bsh_data","bsh_marker_enhanced_clim.rds"))
 
 
-##############################################################
-# enhancing marker with seasonal GLORYS & bathy data for the NWA
-##############################################################
+### SCRAP ###
+# ######################################################################
+# # enhancing marker with climotological GLORYS & bathy data for the NWA
+# ######################################################################
+# GLORYS_clim <- here("data","GLORYS","GLORYS_clim.grd") %>% stack()
 
-marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% 
-            readRDS() %>%
-            dplyr::select(-X,-Y)
+# marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% 
+#             readRDS() %>%
+#             dplyr::select(-X,-Y)
 
-marker <- marker %>% dplyr::select(1:6) %>% mutate(quarter = as.yearqtr(year_mon) + 1/12,
-                                               quarter = format(quarter, "%q") %>% as.numeric())
+# marker <- marker %>% dplyr::select(1:6) 
+# marker.env <- raster::extract(GLORYS_clim, marker)
 
-GLORYS_NWA_dir <- here("data","GLORYS")
+# marker.clim <- cbind(marker, marker.env)
 
-# function to enhance AIS data
-marker_seasonal<-enhance_data_seasonal(input_df = marker, env_dir = GLORYS_NWA_dir, add_error = FALSE) #run it!
+# # combine
+# saveRDS(marker.clim, here("data","bsh_data","bsh_marker_enhanced_clim.rds"))
 
-marker_seasonal <- marker_seasonal %>% na.omit()
 
-saveRDS(marker_seasonal, here("data","bsh_data","bsh_marker_enhanced_seasonal.rds"))
+# ##############################################################
+# # enhancing marker with seasonal GLORYS & bathy data for the NWA
+# ##############################################################
+
+# marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% 
+#             readRDS() %>%
+#             dplyr::select(-X,-Y)
+
+# marker <- marker %>% dplyr::select(1:6) %>% mutate(quarter = as.yearqtr(year_mon) + 1/12,
+#                                                quarter = format(quarter, "%q") %>% as.numeric())
+
+# GLORYS_NWA_dir <- here("data","GLORYS")
+
+# # function to enhance AIS data
+# marker_seasonal<-enhance_data_seasonal(input_df = marker, env_dir = GLORYS_NWA_dir, add_error = FALSE) #run it!
+
+# marker_seasonal <- marker_seasonal %>% na.omit()
+
+# saveRDS(marker_seasonal, here("data","bsh_data","bsh_marker_enhanced_seasonal.rds"))
