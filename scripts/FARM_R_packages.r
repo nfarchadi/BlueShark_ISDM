@@ -17,6 +17,9 @@
 # library(remotes, lib.loc = "~/bsh_ISDM/R_packages")
 # install.packages("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.5-4.tar.gz", repos=NULL, type = 'source')
 # install.packages("terra", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
-install.packages("sn", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
+# install.packages("sn", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
+# install.packages("ecospat", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
+install.packages("fmesher", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
+
 #library(terra)
 print(sessionInfo())
