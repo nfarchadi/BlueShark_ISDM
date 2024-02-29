@@ -9,8 +9,8 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
 
  
   # make dataframe for metrics
-  Evaluations_kfold_BRT <- as.data.frame(matrix(data=0,nrow=(k_folds*4) * repeats,ncol=14)) 
-  colnames(Evaluations_kfold_BRT) <- c("k","Deviance", "R_squred", "AUC","TSS","MAE","Bias","Sensitivity","Specificity","FalsePos","FalseNeg","repeat", "eval", "time")
+  Evaluations_kfold_BRT <- as.data.frame(matrix(data=0,nrow=(k_folds*4) * repeats,ncol=15)) 
+  colnames(Evaluations_kfold_BRT) <- c("k","Deviance", "R_squared", "AUC","TSS","MAE","Bias","Sensitivity","Specificity","FalsePos","FalseNeg","Boyce","repeat","eval","time")
   counter = 1
     
   print(paste0("testing BRT ensemble predictive skill"))
@@ -62,10 +62,6 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
                                    learning.rate = learning.rate,
                                    bag.fraction = bag.fraction,
                                    n.trees = n_trees)
-      
-      
-      t2 <- Sys.time()
-      t3 <- t2-t1
 
       # predict and evaluate
       testCombine <- rbind(etag_test, marker_test, observer_test)
@@ -81,6 +77,9 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       preds_observer <- gbm::predict.gbm(brt.observer, testCombine,
                                 n.trees=brt.observer$gbm.call$best.trees,
                                 type="response")
+      
+      t2 <- Sys.time()
+      t3 <- difftime(t2,t1, units = c("mins"))
       
       preds_Ensemble <- rowMeans(cbind(preds_etag,preds_etag,preds_observer), na.rm = TRUE)
       
@@ -127,9 +126,10 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((etag_test %>% pull(gbm.y))),factor(round(etag_Ensemble)))
       Evaluations_kfold_BRT[counter,10] <- mean(etag_Ensemble[etag_test[,gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(etag_Ensemble[etag_test[,gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "etag"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(etag_Ensemble, etag_Ensemble[etag_test[,gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "etag"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
 
 
@@ -152,9 +152,10 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((marker_test %>% pull(gbm.y))),factor(round(marker_Ensemble)))
       Evaluations_kfold_BRT[counter,10] <- mean(marker_Ensemble[marker_test[,gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(marker_Ensemble[marker_test[,gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "marker"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(marker_Ensemble, marker_Ensemble[marker_test[,gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "marker"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
       
@@ -177,9 +178,10 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((observer_test %>% pull(gbm.y))),factor(round(observer_Ensemble)))
       Evaluations_kfold_BRT[counter,10] <- mean(observer_Ensemble[observer_test[,gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(observer_Ensemble[observer_test[,gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "observer"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(observer_Ensemble, observer_Ensemble[observer_test[,gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "observer"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
       
@@ -201,9 +203,10 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((testCombine %>% pull(gbm.y))),factor(round(preds_Ensemble)))
       Evaluations_kfold_BRT[counter,10] <- mean(preds_Ensemble[testCombine[,gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(preds_Ensemble[testCombine[,gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "all"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(preds_Ensemble, preds_Ensemble[testCombine[,gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "all"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
     }

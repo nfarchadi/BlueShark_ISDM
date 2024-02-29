@@ -1,6 +1,6 @@
-# # repeated k fold cross validation function for spatial only ISDM model
+# # repeated k fold cross validation function for spatiotemporal ISDM
 
-INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repeats = 10, cores = 1, n_samples = 1000){
+INLA_spatiotemporal_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repeats = 10, cores = 1, n_samples = 1000){
 
     # make data frames for metrics
     Evaluations_kfold_INLA <- as.data.frame(matrix(data=0, nrow = (k_folds*4) * repeats, ncol = 17))
@@ -38,14 +38,19 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
         
         for (k in 1:k_folds){
             # separate train by dataset
-            train_etag <- dataInput[dataInput$Kset!=k & dataInput$dataset == "etag",] %>% as.data.frame()
-            train_marker <- dataInput[dataInput$Kset!=k & dataInput$dataset == "marker",] %>% as.data.frame()
-            train_observer <- dataInput[dataInput$Kset!=k & dataInput$dataset == "observer",] %>% as.data.frame()
+            train_etag <- dataInput[dataInput$Kset!=k & dataInput$dataset == "etag",] %>% as.data.frame() %>% arrange(season)
+            train_marker <- dataInput[dataInput$Kset!=k & dataInput$dataset == "marker",] %>% as.data.frame() %>% arrange(season)
+            train_observer <- dataInput[dataInput$Kset!=k & dataInput$dataset == "observer",] %>% as.data.frame() %>% arrange(season)
 
             train <- rbind(train_etag, train_marker, train_observer)
             test <- dataInput[dataInput$Kset==k,] %>% rbind(., train) %>% as.data.frame() # testing data should be all the datasets
-        
-
+            
+            # number of groups for spatial index and projection (A) matrix (automatically made in inlabru)
+            n_seasons_etag <- length(unique(train_etag[,"season"]))
+            n_seasons_marker <- length(unique(train_marker[,"season"]))
+            n_seasons_observer <- length(unique(train_observer[,"season"]))
+            
+            # sea <- train %>% dplyr::select(season) %>% colnames()
       
             ###############
             # Model Formula
@@ -61,9 +66,9 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
                     # sss_sd(sss_sd, model = sss_sd_spde) +
                     bathy(bathy, model = bathy_spde) +
                     # rugosity(rugosity, model = rugosity_spde) +
-                    etag_field(geometry, model = spde) + 
-                    marker_field(geometry, copy = "etag_field", fixed = FALSE) + # fixed = F means we want to scale the field by an estimated scalar parameter
-                    observer_field(geometry, copy = "etag_field", fixed = FALSE)
+                    etag_field(geometry, model = spde, group = season, control.group = list(model = 'ar1', cyclic = TRUE)) + # control.group = list(model = 'ar1', cyclic = TRUE) <- this does not have to be added to the other spatial fields because they are copied
+                    marker_field(geometry, copy = "etag_field", group = season, fixed = FALSE) + # fixed = F means we want to scale the field by an estimated scalar parameter 
+                    observer_field(geometry, copy = "etag_field", group = season, fixed = FALSE)
         
                 
         
@@ -124,6 +129,7 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
             like_etag <- like(family = "binomial",
                                 formula = pres_abs ~ sst + sst_sd + bathy + etag_field,
                                 data = train_etag,
+                                
                                 samplers = NWA,
                                 domain = list(geometry = mesh1),
                             #   exclude = c("Intercept_marker", "Intercept_observer", 
@@ -174,7 +180,7 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
             ##################################
             # Prediction & Preformance Metrics
             ##################################
-            preds_bru <- predict(out.inla, data = test %>% dplyr::select(sst,sst_sd,bathy), formula = ~ plogis(sst + sst_sd + bathy + etag_field + marker_field + observer_field), 
+            preds_bru <- predict(out.inla, data = test %>% dplyr::select(sst,sst_sd,bathy, season), formula = ~ data.frame(season = season, lambda = plogis(sst + sst_sd + bathy + etag_field + marker_field + observer_field)), 
                                 n.samples = n_samples, num.threads = cores)
             t2 <- Sys.time()
             t3 <- difftime(t2,t1, units = c("mins")) #curious how each fold takes      

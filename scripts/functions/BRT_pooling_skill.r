@@ -3,8 +3,8 @@
 BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_folds = 5, repeats = 10, tree.complexity = 3, bag.fraction = 0.6, n_trees = 2500){
 
   # make dataframe for metrics
-  Evaluations_kfold_BRT <- as.data.frame(matrix(data=0,nrow=(k_folds*4) * repeats,ncol=14)) 
-  colnames(Evaluations_kfold_BRT) <- c("k","Deviance", "R_squred", "AUC","TSS","MAE","Bias","Sensitivity","Specificity","FalsePos","FalseNeg","repeat", "eval", "time")
+  Evaluations_kfold_BRT <- as.data.frame(matrix(data=0,nrow=(k_folds*4) * repeats,ncol=15)) 
+  colnames(Evaluations_kfold_BRT) <- c("k","Deviance", "R_squared", "AUC","TSS","MAE","Bias","Sensitivity","Specificity","FalsePos","FalseNeg","Boyce","repeat","eval","time")
   counter = 1
     
   print(paste0("testing BRT pooling predictive skill"))
@@ -32,14 +32,14 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
                                    learning.rate = learning.rate,
                                    bag.fraction = bag.fraction,
                                    n.trees = n_trees)
-      
-      t2 <- Sys.time()
-      t3 <- t2-t1
 
       # predict and evaluate
       preds_pooling <- gbm::predict.gbm(brt.k, test,
                                 n.trees=brt.k$gbm.call$best.trees,
                                 type="response")
+      
+      t2 <- Sys.time()
+      t3 <- difftime(t2,t1, units = c("mins"))
       
       
       dev_eval3<-function(x){
@@ -78,9 +78,10 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((test %>% filter(dataset == "etag") %>% pull(gbm.y))),factor(round(etag_pooling)))
       Evaluations_kfold_BRT[counter,10] <- mean(etag_pooling[test[test$dataset == "etag",gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(etag_pooling[test[test$dataset == "etag",gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "etag"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(etag_pooling, etag_pooling[test[test$dataset == "etag",gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "etag"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
 
 
@@ -103,9 +104,10 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((test %>% filter(dataset == "marker") %>% pull(gbm.y))),factor(round(marker_pooling)))
       Evaluations_kfold_BRT[counter,10] <- mean(marker_pooling[test[test$dataset == "marker",gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(marker_pooling[test[test$dataset == "marker",gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "marker"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(marker_pooling, marker_pooling[test[test$dataset == "marker",gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "marker"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
       
@@ -128,9 +130,10 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((test %>% filter(dataset == "observer") %>% pull(gbm.y))),factor(round(observer_pooling)))
       Evaluations_kfold_BRT[counter,10] <- mean(observer_pooling[test[test$dataset == "observer",gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(observer_pooling[test[test$dataset == "observer",gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "observer"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(observer_pooling, observer_pooling[test[test$dataset == "observer",gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "observer"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
       
@@ -152,9 +155,10 @@ BRT_pooling_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_f
       Evaluations_kfold_BRT[counter,9] <- caret::specificity(factor((test %>% pull(gbm.y))),factor(round(preds_pooling)))
       Evaluations_kfold_BRT[counter,10] <- mean(preds_pooling[test[,gbm.y]==0])
       Evaluations_kfold_BRT[counter,11] <- mean(preds_pooling[test[,gbm.y]==1])
-      Evaluations_kfold_BRT[counter,12] <- i
-      Evaluations_kfold_BRT[counter,13] <- "all"
-      Evaluations_kfold_BRT[counter,14] <- t3
+      Evaluations_kfold_BRT[counter,12] <- ecospat::ecospat.boyce(preds_pooling, preds_pooling[test[,gbm.y]==1], nclass=0, window.w="default", res=100, PEplot = FALSE)$cor
+      Evaluations_kfold_BRT[counter,13] <- i
+      Evaluations_kfold_BRT[counter,14] <- "all"
+      Evaluations_kfold_BRT[counter,15] <- t3
       counter=counter+1  
       
     }
