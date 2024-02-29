@@ -1,16 +1,16 @@
 #!/bin/bash -l
 
 # setting name of job
-#SBATCH --job-name=ISDM_spatial_skill
+#SBATCH --job-name=ISDM_spatiotemporal_skill
 
 # setting home directory
 #SBATCH -D /home/njfarcha/bsh_ISDM
 
 # setting standard error output
-#SBATCH -e /home/njfarcha/bsh_ISDM/slurm_log/sterror_ISDMSpatial_%j.txt
+#SBATCH -e /home/njfarcha/bsh_ISDM/slurm_log/sterror_ISDMSpatiotemporal_%j.txt
 
 # setting standard output
-#SBATCH -o /home/njfarcha/bsh_ISDM/slurm_log/stdoutput_ISDMSpatial_%j.txt
+#SBATCH -o /home/njfarcha/bsh_ISDM/slurm_log/stdoutput_ISDMSpatiotemporal_%j.txt
 
 # setting medium priority
 #SBATCH -p med2
@@ -21,7 +21,7 @@
 # setting the number of nodes
 #SBATCH --nodes=1
 
-# setting the memory -- 20GB seems to work well for these models
+# setting the memory -- 20GB seems to work well for these models. before I was using --mem (mem per node) but going to try --mem-per-cpu
 #SBATCH --mem-per-cpu=2G
 
 # setting the number of tasks
@@ -39,7 +39,7 @@
 #SBATCH --mail-user=nfarchadi@sdsu.edu
 
 # now we'll print out the contents of the R script to the output file
-cat scripts/2_PredictiveSkill/ISDM_Spatial_PredSkill.r
+cat scripts/2_PredictiveSkill/ISDM_Spatiotemporal_PredSkill.r
 echo "ok now for the actual standard output"
 
 
@@ -48,4 +48,4 @@ echo "ok now for the actual standard output"
 # load R
 module load R
 
-srun Rscript scripts/2_PredictiveSkill/ISDM_Spatial_PredSkill.r
+srun Rscript scripts/2_PredictiveSkill/ISDM_Spatiotemporal_PredSkill.r

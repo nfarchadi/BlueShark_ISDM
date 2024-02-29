@@ -8,6 +8,7 @@ library(INLA, lib.loc = "~/bsh_ISDM/R_packages")
 library(sn, lib.loc = "~/bsh_ISDM/R_packages")
 library(Metrics, lib.loc = "~/bsh_ISDM/R_packages")
 library(caret, lib.loc = "~/bsh_ISDM/R_packages")
+library(ecospat, lib.loc = "~/bsh_ISDM/R_packages")
 library(dismo, lib.loc = "~/bsh_ISDM/R_packages")
 library(sf)
 library(terra)
@@ -36,7 +37,8 @@ NWA <- NWA %>% sf::st_as_sf("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +t
 etag <- here("data","bsh_data","bsh_etag_enhanced.rds") %>% # or here("data","bsh_data","bsh_etag_enhanced_seasonal.rds")
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry()
+            sf::st_drop_geometry() %>% 
+            unique()
 
 
 # getting the data in a 1:1 ratio by year_mon
@@ -74,7 +76,8 @@ etag <- sampled_etag %>%
 marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% # or here("data","bsh_data","bsh_marker_enhanced_seasonal.rds")
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry()
+            sf::st_drop_geometry() %>% 
+            unique()
                 
 
 # getting the data in a 1:1 ratio by year_mon
@@ -110,7 +113,8 @@ marker<-sampled_marker %>%
 observer <- here("data","bsh_data","bsh_observer_enhanced.rds") %>%
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry()
+            sf::st_drop_geometry() %>% 
+            unique()
 
 # getting the data in a 1:1 ratio year_mon
 set.seed(24)
@@ -147,15 +151,37 @@ bsh_all <- bsh_all %>%
                mutate_at(.vars = c("sst", "sss", "ssh", "mld", "log_eke", "sst_sd", "ssh_sd",
                                    "sss_sd", "bathy", "rugosity"),
                          .funs = scale)
+               
+############
+# downsample
+############
+set.seed(24)
+# which has the smallest dataset and downsample the data to that number
+bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
+
+bsh_all <- bsh_all %>%
+  group_by(pres_abs,dataset) %>% 
+  nest() %>% 
+  ungroup() %>%
+  mutate(count = 7994)
+  
+# sample by n for each nested group
+bsh_all <- bsh_all %>%
+  mutate(samp = map2(data, count, sample_n))
+
+# unnest the dataframe back
+bsh_all <- bsh_all %>% 
+  dplyr::select(-data, -count) %>%
+  unnest(samp) %>%
+  mutate(pres_abs = as.integer(pres_abs)) %>% unique()
+  
 
 # checking for collinearity 
 collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity))) #remove sss, ssh, and log_eke maybe? --- I get the same result if I do it by dataset too
 
 
-bsh_all %>% names()
-
 #########################################################
-# 2 fold cross-validation, repeated 10 times INLA Spatial
+# 5 fold cross-validation, repeated 10 times INLA Spatial
 #########################################################
 source(here("scripts","functions", "INLA_spatial_skill.r"))
 
@@ -163,7 +189,7 @@ bsh_ISDM_spatial <- INLA_spatial_skill(dataInput = bsh_all,
                             inla.x = c(8,13,16), #c(8,11,13:17), 
                             inla.y=1,
                             shp = NWA, 
-                            k_folds = 2, repeats = 10,
+                            k_folds = 5, repeats = 10,
                             cores = 20, n_samples = 1000)
 
 saveRDS(bsh_ISDM_spatial, here("results","bsh_ISDM_spatial.rds"))

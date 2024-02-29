@@ -1,21 +1,35 @@
-# BRT ensemble and pooling
-
+# INLA spatiotemporal ISDM
 library(tidyverse, lib.loc = "~/bsh_ISDM/R_packages")
 library(raster, lib.loc = "~/bsh_ISDM/R_packages")
 library(zoo, lib.loc = "~/bsh_ISDM/R_packages")
 library(here, lib.loc = "~/bsh_ISDM/R_packages")
-library(dismo, lib.loc = "~/bsh_ISDM/R_packages")
+library(inlabru, lib.loc = "~/bsh_ISDM/R_packages")
+library(INLA, lib.loc = "~/bsh_ISDM/R_packages")
+library(sn, lib.loc = "~/bsh_ISDM/R_packages")
 library(Metrics, lib.loc = "~/bsh_ISDM/R_packages")
-library(ecospat, lib.loc = "~/bsh_ISDM/R_packages")
 library(caret, lib.loc = "~/bsh_ISDM/R_packages")
+library(ecospat, lib.loc = "~/bsh_ISDM/R_packages")
+library(dismo, lib.loc = "~/bsh_ISDM/R_packages")
 library(sf)
+library(terra)
 sf_use_s2(FALSE) # need to do this to remove spherical geometry
-source(here("scripts", "functions","collinearity.r")) # find out how here works on the farm
+source(here("scripts", "functions","collinearity.r"))
+print(bru_safe_inla())
+#INLA:::inla.binary.install(os = "Ubuntu-22.04")
 
-# load NWA shapefile
-NWA <- here("data","shapefiles","NWA.shp") %>% 
-        sf::st_read(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
 
+# input GLORYS climotology rasters, scale them, and use it to make a polygon of the NWA region
+# Not as fine as other NWA shapefile which is better for making mesh in INLA
+GLORYS_NWA <- here("data","GLORYS", "GLORYS_clim.grd") %>% stack() %>% scale()
+GLORYS_NWA <- dropLayer(GLORYS_NWA, c(2,3,5))
+#GLORYS_NWA <- projectRaster(GLORYS_NWA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") #"+proj=laea +lat_0=32.5 +lon_0=-52.5 +x_0=0 +y_0=0 +units=km +no_defs +ellps=WGS84"
+GLORYS_NWA <- terra::rast(GLORYS_NWA) # inlabru uses SpatRaster objects
+
+NWA <- as.polygons(GLORYS_NWA > -Inf)
+NWA <- NWA %>% sf::st_as_sf("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
+
+### first making all the data pres:abs ratio 1:1 --- using the same method as the BRT script
 
 ##########
 # bsh etag
@@ -23,8 +37,7 @@ NWA <- here("data","shapefiles","NWA.shp") %>%
 etag <- here("data","bsh_data","bsh_etag_enhanced.rds") %>% # or here("data","bsh_data","bsh_etag_enhanced_seasonal.rds")
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry() %>% 
-            unique()
+            sf::st_drop_geometry() %>% unique()
 
 
 # getting the data in a 1:1 ratio by year_mon
@@ -62,8 +75,7 @@ etag <- sampled_etag %>%
 marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% # or here("data","bsh_data","bsh_marker_enhanced_seasonal.rds")
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry() %>%
-            unique()
+            sf::st_drop_geometry() %>% unique()
                 
 
 # getting the data in a 1:1 ratio by year_mon
@@ -99,8 +111,7 @@ marker<-sampled_marker %>%
 observer <- here("data","bsh_data","bsh_observer_enhanced.rds") %>%
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry() %>% 
-            unique()
+            sf::st_drop_geometry() %>% unique()
 
 # getting the data in a 1:1 ratio year_mon
 set.seed(24)
@@ -132,6 +143,16 @@ observer <- sampled_observer %>%
 ### Combine
 bsh_all <- rbind(etag %>% dplyr::select(-c(longitudeError, latitudeError)), marker, observer)
 
+# scale environmental data
+bsh_all <- bsh_all %>%
+               mutate_at(.vars = c("sst", "sss", "ssh", "mld", "log_eke", "sst_sd", "ssh_sd",
+                                   "sss_sd", "bathy", "rugosity"),
+                         .funs = scale)
+
+# add season term
+yq <- as.yearqtr(bsh_all$year_mon + 1/12)
+bsh_all$season <- format(yq, "%q") %>% as.numeric()
+
 ############
 # downsample
 ############
@@ -155,36 +176,20 @@ bsh_all <- bsh_all %>%
   unnest(samp) %>%
   mutate(pres_abs = as.integer(pres_abs)) %>% unique()
 
-
 # checking for collinearity 
 collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity))) #remove sss, ssh, and log_eke maybe? --- I get the same result if I do it by dataset too
 
 
-#########################################################
-# 5 fold cross-validation, repeated 10 times BRT ensemble
-#########################################################
-source(here("scripts","functions", "BRT_ensemble_skill.r"))
+################################################################
+# 5 fold cross-validation, repeated 10 times INLA Spatiotemporal
+################################################################
+source(here("scripts","functions", "INLA_spatiotemporal_skill.r"))
 
-bsh_ensemble <- BRT_ensemble_skill(dataInput = bsh_all, 
-                            gbm.x = c(8,13,16), #c(8,11,13:17)
-                            gbm.y=1, learning.rate = 0.005, 
-                            bag.fraction = 0.75, tree.complexity = 5,
+bsh_ISDM_spatiotemporal <- INLA_spatiotemporal_skill(dataInput = bsh_all, 
+                            inla.x = c(8,13,16), #c(8,11,13:17), 
+                            inla.y=1,
+                            shp = NWA, 
                             k_folds = 5, repeats = 10,
-                            n_trees = 2000)
+                            cores = 20, n_samples = 1000)
 
-saveRDS(bsh_ensemble, here("results","BRT_ensemble_skill.rds"))
-
-
-########################################################
-# 5 fold cross-validation, repeated 10 times BRT pooling
-########################################################
-source(here("scripts","functions", "BRT_pooling_skill.r"))
-
-bsh_pooling <- BRT_pooling_skill(dataInput = bsh_all, 
-                            gbm.x = c(8,13,16), #c(8,11,13:17)
-                            gbm.y=1, learning.rate = 0.005, 
-                            bag.fraction = 0.75, tree.complexity = 5,
-                            k_folds = 5, repeats = 10,
-                            n_trees = 2000)
-
-saveRDS(bsh_pooling, here("results","BRT_pooling_skill.rds"))
+saveRDS(bsh_ISDM_spatiotemporal, here("results","bsh_ISDM_spatiotemporal.rds"))
