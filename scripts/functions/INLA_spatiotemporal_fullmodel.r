@@ -1,6 +1,6 @@
 # # Fitting ISDM spatiotemporal with full dataset
 
-INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_samples = 1000){
+INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_samples = 1000, env_data = NULL){
 
     ################################################
     # make boundary from the shapefile and make mesh
@@ -11,7 +11,7 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
     max.edge = 0.8
     ## Set the length of the boundary extension
     bound.outer = 5
-    bdry <- inla.sp2segment(NWA %>% as('Spatial'))
+    bdry <- inla.sp2segment(shp %>% as('Spatial'))
     bdry$loc <- inla.mesh.map(bdry$loc)
 
     mesh1 <- inla.mesh.2d(boundary = bdry, #using the boundry agrument since we have a shapefile
@@ -34,9 +34,9 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
     # Model Formula
     ###############
     form <-  ~ -1 + 
-            # intercept_observer(1) + # observer intercept (dataset-specific)
-            # intercept_marker(1) + # marker intercept (dataset-specific)
-            # intercept_etag(1) + # etag intercept (dataset-specific)
+            intercept_etag(1) + # etag intercept (dataset-specific)
+            intercept_marker(1) + # marker intercept (dataset-specific)
+            intercept_observer(1) + # observer intercept (dataset-specific)
             sst(sst, model = sst_spde) + 
             # mld(mld, model = mld_spde) +
             sst_sd(sst_sd, model = sst_sd_spde) +
@@ -104,7 +104,7 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
     
 
     like_etag <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + etag_field,
+                        formula = pres_abs ~ intercept_etag + sst + sst_sd + bathy + etag_field,
                         data = etag,
                         samplers = NWA,
                         domain = list(geometry = mesh1),
@@ -114,7 +114,7 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
                         )
 
     like_marker <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + marker_field,
+                        formula = pres_abs ~ intercept_marker + sst + sst_sd + bathy + marker_field,
                         data = marker,
                         samplers = NWA,
                         domain = list(geometry = mesh1),
@@ -124,7 +124,7 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
                         )
 
     like_observer <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + observer_field,
+                        formula = pres_abs ~ intercept_observer + sst + sst_sd + bathy + observer_field,
                         data = observer,
                         # exclude = c("Intercept_etag", "Intercept_marker", 
                         #             "etag_field", "marker_field", 
@@ -155,18 +155,58 @@ INLA_spatiotemporal_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores 
     # the marginal effects (ME) data for the covariates 
     ME <- out.inla$summary.random
     
-    # projection of the spatial random field
+    # making seasonal grids for projection of the spatial random fields
     ppxl <- fm_pixels(mesh1, mask = NWA, dims = c(541, 1141))
     ppxl_all <- fm_cprod(ppxl, data.frame(season = seq_len(4)))
     
-    GMRF <- predict(out.inla,
-                    ppxl_all, # using the same dims as GLORYS
-                    ~ etag_field,
-                    n.samples = n_samples, 
-                    num.threads = cores
-                    )
+    if(is.null(env_data)){
+        # projection of the spatial random fields
+        GMRF <- predict(out.inla,
+                        ppxl_all, # using the same dims as GLORYS
+                        ~ etag_field,
+                        n.samples = n_samples, 
+                        num.threads = cores
+                        )
+        
+        summary_inla <- print(summary(out.inla))
+        
+        spde.range <- spde.posterior(out.inla, "etag_field", what = "range")
+        spde.logvar <- spde.posterior(out.inla, "etag_field", what = "log.variance")
+        
+    } else {
+        # projection of the spatial random fields
+        GMRF <- predict(out.inla,
+                        ppxl_all, # using the same dims as GLORYS
+                        ~ etag_field,
+                        n.samples = n_samples, 
+                        num.threads = cores
+                        )
+        
+        # spatial prediction
+        env_data <- env_data %>% terra::as.data.frame(., xy = TRUE) %>% 
+            rename("lon" = "x", "lat"="y") %>% 
+            mutate(season = 4) # 4 because its Sep
+        
+        env_data <- env_data %>% sf::st_as_sf(coords = c("lon", "lat"),
+                                    crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+        
+        preds_bru <- predict(out.inla, data = env_data %>% dplyr::select(sst,sst_sd,bathy, season), formula = ~ data.frame(season = season, lambda = plogis(intercept_etag + intercept_marker + intercept_observer + sst + sst_sd + bathy + etag_field + marker_field + observer_field)), 
+                                n.samples = n_samples, num.threads = cores) 
+        
+        summary_inla <- print(summary(out.inla))
+        
+        spde.range <- spde.posterior(out.inla, "etag_field", what = "range")
+        spde.logvar <- spde.posterior(out.inla, "etag_field", what = "log.variance")  
+    }
 
-    ISDM_spatial_ME_GMRF <- list(ME, GMRF)
-
-    return(ISDM_spatial_ME_GMRF)
+    if(is.null(env_data)){
+        ISDM_spatiotemporal_ME_GMRF <- list(ME, GMRF, summary_inla, spde.range, spde.logvar)
+        
+        return(ISDM_spatiotemporal_ME_GMRF)
+        
+    } else {
+        ISDM_spatiotemporal_ME_GMRF_preds <- list(ME, GMRF, preds_bru, summary_inla, spde.range, spde.logvar)
+        
+        return(ISDM_spatiotemporal_ME_GMRF_preds)
+    }
 }

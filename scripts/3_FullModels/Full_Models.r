@@ -18,14 +18,12 @@ sf_use_s2(FALSE) # need to do this to remove spherical geometry
 source(here("scripts", "functions","collinearity.r")) # find out how here works on the farm
 print(bru_safe_inla())
 
-# input GLORYS climotology rasters, scale them, and use it to make a polygon of the NWA region
+# input GLORYS raster, scale them, and use it to make a polygon of the NWA region
 # Not as fine as other NWA shapefile which is better for making mesh in INLA
-GLORYS_NWA <- here("data","GLORYS", "GLORYS_clim.grd") %>% stack() %>% scale()
-GLORYS_NWA <- dropLayer(GLORYS_NWA, c(2,3,5))
-#GLORYS_NWA <- projectRaster(GLORYS_NWA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") #"+proj=laea +lat_0=32.5 +lon_0=-52.5 +x_0=0 +y_0=0 +units=km +no_defs +ellps=WGS84"
+GLORYS_NWA <- here("data", "GLORYS", "GLORYS_2014-09.grd") %>% stack() %>% scale()
+GLORYS_NWA <- subset(GLORYS_NWA, c(1,6,9))
 GLORYS_NWA <- terra::rast(GLORYS_NWA) # inlabru uses SpatRaster objects
-
-NWA <- as.polygons(GLORYS_NWA > -Inf)
+NWA <- terra::as.polygons(GLORYS_NWA > -Inf)
 NWA <- NWA %>% sf::st_as_sf("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
 
@@ -143,6 +141,33 @@ observer <- sampled_observer %>%
 ### Combine
 bsh_all <- rbind(etag %>% dplyr::select(-c(longitudeError, latitudeError)), marker, observer)
 
+
+
+# ############
+# # downsample
+# ############
+# set.seed(24)
+# # which has the smallest dataset and downsample the data to that number
+# bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
+
+# bsh_all <- bsh_all %>%
+#   group_by(pres_abs,dataset) %>% 
+#   nest() %>% 
+#   ungroup() %>%
+#   mutate(count = 500)
+  
+# # sample by n for each nested group
+# bsh_all <- bsh_all %>%
+#   mutate(samp = map2(data, count, sample_n))
+
+# # unnest the dataframe back
+# bsh_all <- bsh_all %>% 
+#   dplyr::select(-data, -count) %>%
+#   unnest(samp) %>%
+#   mutate(pres_abs = as.integer(pres_abs)) %>% unique()
+  
+
+
 # scale environmental data for ISDM models
 bsh_all_scaled <- bsh_all %>%
                mutate_at(.vars = c("sst", "sss", "ssh", "mld", "log_eke", "sst_sd", "ssh_sd",
@@ -187,7 +212,7 @@ collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity)
 # ##############
 # # ISDM Spatial
 # ##############
-# # this code will just retrieve and save the data for the marginal effects (ME) and GMRF because model is too big to save
+# # this code will just retrieve and save the data for the marginal effects (ME), GMRF, and spatial predictions because model is too big to save
 
 # source(here("scripts","functions", "INLA_spatial_fullmodel.r"))
 
@@ -195,15 +220,16 @@ collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity)
 #                             inla.x = c(8,13,16), # make sure this is right! 
 #                             inla.y=1,
 #                             shp = NWA,
-#                             cores = 20, n_samples = 1000)
+#                             cores = 20, n_samples = 1000,
+#                             env_data = GLORYS_NWA)
 
 
-# saveRDS(bsh_ISDM_spatial, here("results","bsh_ISDM_spatial_ME_GMRF.rds"))
+# saveRDS(bsh_ISDM_spatial, here("results","bsh_ISDM_spatial_ME_GMRF_preds.rds"))
 
 #####################
 # ISDM Spatiotemporal
 #####################
-# this code will just retrieve and save the data for the marginal effects (ME) and GMRF because model is too big to save
+# this code will just retrieve and save the data for the marginal effects (ME), GMRF, and spatial predictions because model is too big to save
 
 source(here("scripts","functions", "INLA_spatiotemporal_fullmodel.r"))
 
@@ -211,6 +237,7 @@ bsh_ISDM_spatiotemporal <- INLA_spatiotemporal_fullmodel(dataInput = bsh_all_sca
                             inla.x = c(8,13,16), # make sure this is right!
                             inla.y=1,
                             shp = NWA,
-                            cores = 20, n_samples = 1000)
+                            cores = 20, n_samples = 1000,
+                            env_data = GLORYS_NWA)
 
-saveRDS(bsh_ISDM_spatiotemporal, here("results","bsh_ISDM_spatiotemporal_ME_GMRF.rds"))
+saveRDS(bsh_ISDM_spatiotemporal, here("results","bsh_ISDM_spatiotemporal_ME_GMRF_preds.rds"))

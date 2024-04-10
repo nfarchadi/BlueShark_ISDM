@@ -1,6 +1,6 @@
 # # Fitting ISDM spatial with full dataset
 
-INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_samples = 1000){
+INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_samples = 1000, env_data = NULL){
 
     ################################################
     # make boundary from the shapefile and make mesh
@@ -11,7 +11,7 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
     max.edge = 0.8
     ## Set the length of the boundary extension
     bound.outer = 5
-    bdry <- inla.sp2segment(NWA %>% as('Spatial'))
+    bdry <- inla.sp2segment(shp %>% as('Spatial'))
     bdry$loc <- inla.mesh.map(bdry$loc)
 
     mesh1 <- inla.mesh.2d(boundary = bdry, #using the boundry agrument since we have a shapefile
@@ -19,7 +19,16 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
                         offset = c(max.edge, bound.outer), #used to set the extension distance
                         cutoff = 0.4  # when using a boarder value is no longer affected by the distance between points but the boundary polygon itself. Thus may be need to reduce cutoff value to achieve a higher the precision of the coastline
                         )
-
+ 
+    # # Following mesh recommendations from:
+    # # https://rpubs.com/jafet089/886687 & https://haakonbakkagit.github.io/btopic104.html
+    # max.edge = 30/5 # 35 seems to be the range parameter after some preliminary models
+    # bound.outer = 30
+    # mesh1 <- fmesher::fm_mesh_2d(boundary = shp,
+    #                    max.edge=c(1,5)*max.edge,
+    #                    offset = c(max.edge, bound.outer),
+    #                    cutoff = max.edge / 5
+    #                    )
     mesh1$crs <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
     # create SPDE object
@@ -34,9 +43,9 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
     # Model Formula
     ###############
     form <-  ~ -1 + 
-            # intercept_observer(1) + # observer intercept (dataset-specific)
-            # intercept_marker(1) + # marker intercept (dataset-specific)
-            # intercept_etag(1) + # etag intercept (dataset-specific)
+            intercept_etag(1) + # etag intercept (dataset-specific)
+            intercept_marker(1) + # marker intercept (dataset-specific)
+            intercept_observer(1) + # observer intercept (dataset-specific)
             sst(sst, model = sst_spde) + 
             # mld(mld, model = mld_spde) +
             sst_sd(sst_sd, model = sst_sd_spde) +
@@ -104,7 +113,8 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
     
 
     like_etag <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + etag_field,
+                      control.family = list(link = "logit"),
+                        formula = pres_abs ~ intercept_etag + sst + sst_sd + bathy + etag_field,
                         data = etag,
                         samplers = NWA,
                         domain = list(geometry = mesh1),
@@ -114,7 +124,8 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
                         )
 
     like_marker <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + marker_field,
+                        control.family = list(link = "logit"),
+                        formula = pres_abs ~ intercept_marker + sst + sst_sd + bathy + marker_field,
                         data = marker,
                         samplers = NWA,
                         domain = list(geometry = mesh1),
@@ -124,7 +135,8 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
                         )
 
     like_observer <- like(family = "binomial",
-                        formula = pres_abs ~ sst + sst_sd + bathy + observer_field,
+                          control.family = list(link = "logit"),
+                        formula = pres_abs ~ intercept_observer + sst + sst_sd + bathy + observer_field,
                         data = observer,
                         # exclude = c("Intercept_etag", "Intercept_marker", 
                         #             "etag_field", "marker_field", 
@@ -155,16 +167,54 @@ INLA_spatial_fullmodel <- function(dataInput, inla.x, inla.y, shp, cores = 1, n_
     # the marginal effects (ME) data for the covariates 
     ME <- out.inla$summary.random
     
-    # projection of the spatial random field
-    GMRF <- predict(out.inla,
-                    fm_pixels(mesh1, mask = NWA, dims = c(541, 1141)), # using the same dims as GLORYS
-                    formula = ~ etag_field,
-                    n.samples = n_samples, 
-                    num.threads = cores
-                    )
+    if(is.null(env_data)){
+        # projection of the spatial random field
+        GMRF <- predict(out.inla,
+                        fmesher::fm_pixels(mesh1, mask = NWA, dims = c(541, 1141)), # using the same dims as GLORYS
+                        formula = ~ etag_field,
+                        n.samples = n_samples, 
+                        num.threads = cores
+                        )
+        
+        summary_inla <- print(summary(out.inla))
+        
+        spde.range <- spde.posterior(out.inla, "etag_field", what = "range")
+        spde.logvar <- spde.posterior(out.inla, "etag_field", what = "log.variance")
+    } else {
+        # projection of the spatial random field
+        GMRF <- predict(out.inla,
+                        fmesher::fm_pixels(mesh1, mask = NWA, dims = c(541, 1141)), # using the same dims as GLORYS
+                        formula = ~ etag_field,
+                        n.samples = n_samples, 
+                        num.threads = cores
+                        )
+        
+        # spatial prediction
+        env_data <- env_data %>% terra::as.data.frame(., xy = TRUE) %>% 
+            rename("lon" = "x", "lat"="y")
+        
+        env_data <- env_data %>% sf::st_as_sf(coords = c("lon", "lat"),
+                                    crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+        env_data <- env_data %>% na.omit()
 
-    ISDM_spatial_ME_GMRF <- list(ME, GMRF)
+        preds_bru <- predict(out.inla, data = env_data %>% dplyr::select(sst,sst_sd,bathy), formula = ~ plogis(intercept_etag + intercept_marker + intercept_observer + sst + sst_sd + bathy + etag_field + marker_field + observer_field), 
+                                n.samples = n_samples, num.threads = cores)
+        
+        summary_inla <- print(summary(out.inla))
+        
+        spde.range <- spde.posterior(out.inla, "etag_field", what = "range")
+        spde.logvar <- spde.posterior(out.inla, "etag_field", what = "log.variance")
+    }
+
+    if(is.null(env_data)){
+        ISDM_spatial_ME_GMRF <- list(ME, GMRF, summary_inla, spde.range, spde.logvar)
+        
+        return(ISDM_spatial_ME_GMRF)
+        
+    } else {
+        ISDM_spatial_ME_GMRF_preds <- list(ME, GMRF, preds_bru, summary_inla, spde.range, spde.logvar)
+        
+        return(ISDM_spatial_ME_GMRF_preds)
+    }
     
-
-    return(ISDM_spatial_ME_GMRF)
 }
