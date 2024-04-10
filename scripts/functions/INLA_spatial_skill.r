@@ -17,7 +17,7 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
     max.edge = 0.8
     ## Set the length of the boundary extension
     bound.outer = 5
-    bdry <- inla.sp2segment(NWA %>% as('Spatial'))
+    bdry <- inla.sp2segment(shp %>% as('Spatial'))
     bdry$loc <- inla.mesh.map(bdry$loc)
 
     mesh1 <- inla.mesh.2d(boundary = bdry, #using the boundry agrument since we have a shapefile
@@ -25,6 +25,16 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
                         offset = c(max.edge, bound.outer), #used to set the extension distance
                         cutoff = 0.4  # when using a boarder value is no longer affected by the distance between points but the boundary polygon itself. Thus may be need to reduce cutoff value to achieve a higher the precision of the coastline
                         )
+    
+    # # Following mesh recommendations from:
+    # # https://rpubs.com/jafet089/886687 & https://haakonbakkagit.github.io/btopic104.html
+    # max.edge = 30/5 # 35 seems to be the range parameter after some preliminary models
+    # bound.outer = 30
+    # mesh1 <- fmesher::fm_mesh_2d(boundary = shp,
+    #                    max.edge=c(0.5,5)*max.edge,
+    #                    offset = c(max.edge, bound.outer),
+    #                    cutoff = max.edge / 5
+    #                    )
 
     mesh1$crs <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
@@ -51,9 +61,9 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
             # Model Formula
             ###############
             form <-  ~ -1 + 
-                    # intercept_observer(1) + # observer intercept (dataset-specific)
-                    # intercept_marker(1) + # marker intercept (dataset-specific)
-                    # intercept_etag(1) + # etag intercept (dataset-specific)
+                    intercept_etag(1) + # etag intercept (dataset-specific)
+                    intercept_marker(1) + # marker intercept (dataset-specific)
+                    intercept_observer(1) + # observer intercept (dataset-specific)
                     sst(sst, model = sst_spde) + 
                     # mld(mld, model = mld_spde) +
                     sst_sd(sst_sd, model = sst_sd_spde) +
@@ -122,9 +132,9 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
                                     crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
 
             like_etag <- like(family = "binomial",
-                                formula = pres_abs ~ sst + sst_sd + bathy + etag_field,
+                                formula = pres_abs ~ intercept_etag + sst + sst_sd + bathy + etag_field,
                                 data = train_etag,
-                                samplers = NWA,
+                                samplers = shp,
                                 domain = list(geometry = mesh1),
                             #   exclude = c("Intercept_marker", "Intercept_observer", 
                             #               "marker_field", "observer_field", 
@@ -132,9 +142,9 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
                                 )
 
             like_marker <- like(family = "binomial",
-                                formula = pres_abs ~ sst + sst_sd + bathy + marker_field,
+                                formula = pres_abs ~ intercept_marker + sst + sst_sd + bathy + marker_field,
                                 data = train_marker,
-                                samplers = NWA,
+                                samplers = shp,
                                 domain = list(geometry = mesh1),
                                 # exclude = c("Intercept_etag", "Intercept_observer", 
                                 #             "etag_field", "observer_field", 
@@ -142,7 +152,7 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
                                 )
 
             like_observer <- like(family = "binomial",
-                                formula = pres_abs ~ sst + sst_sd + bathy + observer_field,
+                                formula = pres_abs ~ intercept_observer + sst + sst_sd + bathy + observer_field,
                                 data = train_observer,
                                 # exclude = c("Intercept_etag", "Intercept_marker", 
                                 #             "etag_field", "marker_field", 
@@ -174,7 +184,7 @@ INLA_spatial_skill <- function(dataInput, inla.x, inla.y, shp, k_folds = 5, repe
             ##################################
             # Prediction & Preformance Metrics
             ##################################
-            preds_bru <- predict(out.inla, data = test %>% dplyr::select(sst,sst_sd,bathy), formula = ~ plogis(sst + sst_sd + bathy + etag_field + marker_field + observer_field), 
+            preds_bru <- predict(out.inla, data = test %>% dplyr::select(sst,sst_sd,bathy), formula = ~ plogis(intercept_etag + intercept_marker + intercept_observer + sst + sst_sd + bathy + etag_field + marker_field + observer_field), 
                                 n.samples = n_samples, num.threads = cores)
             t2 <- Sys.time()
             t3 <- difftime(t2,t1, units = c("mins")) #curious how each fold takes      

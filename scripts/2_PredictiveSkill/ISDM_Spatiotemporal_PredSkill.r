@@ -18,9 +18,9 @@ print(bru_safe_inla())
 #INLA:::inla.binary.install(os = "Ubuntu-22.04")
 
 
-# input GLORYS climotology rasters, scale them, and use it to make a polygon of the NWA region
+# input GLORYS raster, scale them, and use it to make a polygon of the NWA region
 # Not as fine as other NWA shapefile which is better for making mesh in INLA
-GLORYS_NWA <- here("data","GLORYS", "GLORYS_clim.grd") %>% stack() %>% scale()
+GLORYS_NWA <- here("data","GLORYS", "GLORYS_2014-09.grd") %>% stack() %>% scale()
 GLORYS_NWA <- dropLayer(GLORYS_NWA, c(2,3,5))
 #GLORYS_NWA <- projectRaster(GLORYS_NWA, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") #"+proj=laea +lat_0=32.5 +lon_0=-52.5 +x_0=0 +y_0=0 +units=km +no_defs +ellps=WGS84"
 GLORYS_NWA <- terra::rast(GLORYS_NWA) # inlabru uses SpatRaster objects
@@ -153,28 +153,28 @@ bsh_all <- bsh_all %>%
 yq <- as.yearqtr(bsh_all$year_mon + 1/12)
 bsh_all$season <- format(yq, "%q") %>% as.numeric()
 
-############
-# downsample
-############
-set.seed(24)
-# which has the smallest dataset and downsample the data to that number
-bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
+# ############
+# # downsample
+# ############
+# set.seed(24)
+# # which has the smallest dataset and downsample the data to that number
+# bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
 
-bsh_all <- bsh_all %>%
-  group_by(pres_abs,dataset) %>% 
-  nest() %>% 
-  ungroup() %>%
-  mutate(count = 7994)
+# bsh_all <- bsh_all %>%
+#   group_by(pres_abs,dataset) %>% 
+#   nest() %>% 
+#   ungroup() %>%
+#   mutate(count = 7994)
   
-# sample by n for each nested group
-bsh_all <- bsh_all %>%
-  mutate(samp = map2(data, count, sample_n))
+# # sample by n for each nested group
+# bsh_all <- bsh_all %>%
+#   mutate(samp = map2(data, count, sample_n))
 
-# unnest the dataframe back
-bsh_all <- bsh_all %>% 
-  dplyr::select(-data, -count) %>%
-  unnest(samp) %>%
-  mutate(pres_abs = as.integer(pres_abs)) %>% unique()
+# # unnest the dataframe back
+# bsh_all <- bsh_all %>% 
+#   dplyr::select(-data, -count) %>%
+#   unnest(samp) %>%
+#   mutate(pres_abs = as.integer(pres_abs)) %>% unique()
 
 # checking for collinearity 
 collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity))) #remove sss, ssh, and log_eke maybe? --- I get the same result if I do it by dataset too
