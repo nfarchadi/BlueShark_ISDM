@@ -19,7 +19,7 @@
 # install.packages("terra", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
 # install.packages("sn", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
 # install.packages("ecospat", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
-install.packages("fmesher", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
+# install.packages("fmesher", repos = "http://cran.us.r-project.org", lib = "~/bsh_ISDM/R_packages")
 
 #library(terra)
 print(sessionInfo())

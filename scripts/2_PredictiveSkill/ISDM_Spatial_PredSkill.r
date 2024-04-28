@@ -153,28 +153,28 @@ bsh_all <- bsh_all %>%
                                    "sss_sd", "bathy", "rugosity"),
                          .funs = scale)
                
-# ############
-# # downsample
-# ############
-# set.seed(24)
-# # which has the smallest dataset and downsample the data to that number
-# bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
+############
+# downsample
+############
+set.seed(24)
+# which has the smallest dataset and downsample the data to that number
+bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
 
-# bsh_all <- bsh_all %>%
-#   group_by(pres_abs,dataset) %>% 
-#   nest() %>% 
-#   ungroup() %>%
-#   mutate(count = 7994)
+bsh_all <- bsh_all %>%
+  group_by(pres_abs,dataset) %>% 
+  nest() %>% 
+  ungroup() %>%
+  mutate(count = 7994)
   
-# # sample by n for each nested group
-# bsh_all <- bsh_all %>%
-#   mutate(samp = map2(data, count, sample_n))
+# sample by n for each nested group
+bsh_all <- bsh_all %>%
+  mutate(samp = map2(data, count, sample_n))
 
-# # unnest the dataframe back
-# bsh_all <- bsh_all %>% 
-#   dplyr::select(-data, -count) %>%
-#   unnest(samp) %>%
-#   mutate(pres_abs = as.integer(pres_abs)) %>% unique()
+# unnest the dataframe back
+bsh_all <- bsh_all %>% 
+  dplyr::select(-data, -count) %>%
+  unnest(samp) %>%
+  mutate(pres_abs = as.integer(pres_abs)) %>% unique()
   
 
 # checking for collinearity 
