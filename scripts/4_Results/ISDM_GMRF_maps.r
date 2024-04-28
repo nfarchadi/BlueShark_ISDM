@@ -11,8 +11,8 @@ world <- ne_countries(scale = "medium", returnclass = "sf")
 
 
 # INLA model results
-ISDM_spatial <- here("results", "bsh_ISDM_spatial_ME_GMRF.rds") %>% readRDS()
-ISDM_spatiotemporal <- here("results", "bsh_ISDM_spatiotemporal_ME_GMRF.rds") %>% readRDS()
+ISDM_spatial <- here("results", "FullModel", "bsh_ISDM_spatial_ME_GMRF_preds_norm_withintercepts.rds") %>% readRDS()
+ISDM_spatiotemporal <- here("results", "FullModel", "bsh_ISDM_spatiotemporal_ME_GMRF_preds_withintercepts.rds") %>% readRDS()
 
 ###############################
 # Plotting GMRF of ISDM Spatial
@@ -31,7 +31,9 @@ coord_sf(xlim = c(-100, -5), ylim = c(10, 56), expand = FALSE) +
 theme_bw() +
 # facet_wrap(~season) +
 cmocean::scale_fill_cmocean(name = "thermal") + 
-labs(x = "", y = "", fill = "Mean")
+labs(x = "", y = "", fill = "Mean") +
+guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
+                             barwidth = 1, barheight = 15))
 
 ggsave(here("plots","ISDM_spatial_GMRF.png"),
        width = 7, height = 5, units = "in", dpi = 300)
@@ -58,8 +60,12 @@ geom_sf(data = world, color = "black", fill = "grey") +
 coord_sf(xlim = c(-100, -5), ylim = c(10, 56), expand = FALSE) +
 facet_wrap(~season, nrow = 4) +
 theme_bw() +
+theme(strip.text = element_text(size = 15),
+      strip.background = element_blank()) +
 cmocean::scale_fill_cmocean(name = "thermal") + 
-labs(x = "", y = "", fill = "Mean")
+labs(x = "", y = "", fill = "Mean") +
+guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
+                             barwidth = 1, barheight = 15))
 
 
 ggsave(here("plots","ISDM_spatiotemporal_GMRF.png"),
@@ -107,16 +113,20 @@ ISDM_GMRF_diff <- ISDM_GMRF_diff %>%
                               season == "Fall_dif" ~ "Fall"),
            season = factor(season, levels = c("Winter", "Spring", "Summer", "Fall")))
 
-    
+   
 ISDM_spatial_diff_plot <- ISDM_GMRF_diff %>%
     ggplot() +
     geom_raster(aes(x = lon, y = lat, fill = difference)) +
     geom_sf(data = world, color = "black", fill = "grey") +
     coord_sf(xlim = c(-100, -5), ylim = c(10, 56), expand = FALSE) +
     theme_bw() +
+    theme(strip.text = element_text(size = 15),
+      strip.background = element_blank()) +
     facet_wrap(~season, nrow = 4) +
-    cmocean::scale_fill_cmocean(name = "balance") + 
-    labs(x = "", y = "", fill = "Difference")
+    cmocean::scale_fill_cmocean(name = "balance", values = scales::rescale(c(-7.5, -4.5, 0, 1.5, 4.5))) + 
+    labs(x = "", y = "", fill = "Difference") +
+guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
+                             barwidth = 1, barheight = 15))
 
 ggsave(here("plots","ISDM_GMRF_diff.png"),
        width = 6, height = 10, units = "in", dpi = 300)

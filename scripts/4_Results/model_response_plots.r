@@ -7,10 +7,10 @@ library(patchwork)
 ###----response plots----####
 
 #All BRT and INLA models
-BRT_ensemble <- here("results","BRT_ensemble_fullmodel.rds") %>% readRDS()
-BRT_pooling <- here("results","BRT_pooling_fullmodel.rds") %>% readRDS()
-ISDM_spatial <- here("results", "bsh_ISDM_spatial_ME_GMRF.rds") %>% readRDS()
-ISDM_spatiotemporal <- here("results", "bsh_ISDM_spatiotemporal_ME_GMRF.rds") %>% readRDS()
+BRT_ensemble <- here("results", "FullModel", "BRT_ensemble_fullmodel.rds") %>% readRDS()
+BRT_pooling <- here("results", "FullModel", "BRT_pooling_fullmodel.rds") %>% readRDS()
+ISDM_spatial <- here("results", "FullModel", "bsh_ISDM_spatial_ME_GMRF_preds_norm_withintercepts.rds") %>% readRDS()
+ISDM_spatiotemporal <- here("results", "FullModel", "bsh_ISDM_spatiotemporal_ME_GMRF_preds_withintercepts.rds") %>% readRDS()
 
 ##############
 # BRT ensemble
