@@ -86,21 +86,24 @@ response_data_ensemble <- rbind(response_data_etag, response_data_marker, respon
 
 
 ensemble_response_plot <- response_data_ensemble %>% 
+  filter(variable != 'Bathymetry' | x > -7.229547e+03) %>% # so the x axis matches with iSDMs (all the same values so does matter removing these)
   ggplot() + 
   geom_line(aes(x=x, y=y, linetype = dataset, color = dataset), size =1) +
-  scale_linetype_manual(values=c("solid", "twodash", "dotted")) + 
-  scale_color_manual(values=c('#FDAE61','#FDAE61','#FDAE61')) +
-  geom_smooth(aes(x=x, y=y), method = "loess", span = 0.2, se = FALSE, linetype = "solid", size = 1, color = "darkgray") + 
+  geom_smooth(aes(x=x, y=y, color = "Ensemble"), method = "loess", span = 0.2, se = FALSE, linetype = "solid", size = 1) + 
+  scale_linetype_manual(values=c("solid", "twodash", "dotted", "solid")) + 
+  scale_color_manual(values=c('#FDAE61','#FDAE61','#FDAE61', 'darkgray')) +
   facet_wrap(~variable, scales = "free", nrow = 1) +
   labs(x = "",
        y = "Marginal Effect",
-       linetype = "Ensemble",
-       color = "Ensemble")+
+       linetype = "",
+       color = "")+
   theme_bw() + 
   theme(panel.spacing = unit(.30, "lines"),
         strip.text = element_text(size=10),
         strip.background = element_blank(),
-        strip.text.x = element_text(margin = margin(0,0,.05,0, "cm")))
+        strip.text.x = element_text(margin = margin(0,0,.05,0, "cm"))) + 
+  guides(color = guide_legend(override.aes = list(color = c('#FDAE61','#FDAE61','#FDAE61', 'darkgray'), linetype = c("solid", "twodash", "dotted", "solid"))),
+         linetype = "none")
 # RColorBrewer::brewer.pal(n = 4, "Spectral")
 
 
@@ -131,6 +134,7 @@ response_data_pooling <-response_data_pooling %>%
          )
 
 pooling_response_plot <- response_data_pooling %>%
+  filter(variable != 'Bathymetry' | x > -7.229547e+03) %>% # so the x axis matches with iSDMs (all the same values so does matter removing these) 
   ggplot() + 
   geom_line(aes(x=x, y=y, color = model), size =1) +
   # scale_linetype_manual(values=c("solid","twodash", "dotted"))+ 
@@ -292,8 +296,8 @@ ISDM_spatial_marginaleffects <- rbind(ISDM_spatial_sst, ISDM_spatial_sst_sd, ISD
                  
 ISDM_spatial_response_plot <- ISDM_spatial_marginaleffects %>% 
 ggplot() + 
-geom_line(aes(x = value, y = mean, color = model), size =1) +
 geom_ribbon(aes(x = value, ymin = mean - sd, ymax = mean + sd), fill = "grey70", alpha = 0.4) +
+geom_line(aes(x = value, y = mean, color = model), size =1) +
 # scale_linetype_manual(values=c("solid","twodash", "dotted"))+ 
 scale_color_manual(values=c('#ABDDA4'))+
 facet_wrap(~variable, scales = "free", nrow = 1) +
@@ -326,8 +330,8 @@ ISDM_spatiotemporal_marginaleffects <- rbind(ISDM_spatiotemporal_sst, ISDM_spati
                  
 ISDM_spatiotemporal_response_plot <- ISDM_spatiotemporal_marginaleffects %>% 
 ggplot() + 
-geom_line(aes(x = value, y = mean, color = model), size =1) +
 geom_ribbon(aes(x = value, ymin = mean - sd, ymax = mean + sd), fill = "grey70", alpha = 0.4) +
+geom_line(aes(x = value, y = mean, color = model), size =1) +
 # scale_linetype_manual(values=c("solid","twodash", "dotted"))+ 
 scale_color_manual(values=c('#2B83BA'))+
 facet_wrap(~variable, scales = "free", nrow = 1) +

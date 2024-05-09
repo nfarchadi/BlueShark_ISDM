@@ -10,7 +10,7 @@ library(patchwork)
 ###########################################
 
 # All BRT and INLA results
-BRT_ensemble <- here("results","BRT_ensemble_skill.rds") %>% readRDS()
+BRT_ensemble <- here("results","BRT_ensemble_skill.rds") %>% readRDS() %>% dplyr::select(-Boyce)
 BRT_pooling <- here("results","BRT_pooling_skill.rds") %>% readRDS()
 ISDM_spatial <- here("results","bsh_ISDM_spatial_norm_withintercepts.rds") %>% readRDS() %>% dplyr::select(-Boyce)
 ISDM_spatiotemporal <- here("results","bsh_ISDM_spatiotemporal_norm_withintercepts.rds") %>% readRDS() %>% dplyr::select(-Boyce)
@@ -22,6 +22,7 @@ ISDM_spatial <- ISDM_spatial %>% dplyr::select(-c(2:4)) %>% mutate(model = "iSDM
 ISDM_spatiotemporal <- ISDM_spatiotemporal %>% dplyr::select(-c(2:4)) %>% mutate(model = "iSDM Seasonal")
 colnames(ISDM_spatial) <- colnames(BRT_ensemble)
 colnames(ISDM_spatiotemporal) <- colnames(BRT_ensemble)
+colnames(BRT_pooling) <- colnames(BRT_ensemble)
 all <- rbind(BRT_ensemble, BRT_pooling, ISDM_spatial, ISDM_spatiotemporal) %>% 
             mutate(eval = case_when(eval == "etag" ~ "Eletronic Tag",
                                     eval == "marker" ~ "Marker",
@@ -190,6 +191,7 @@ ISDM_spatial <- ISDM_spatial %>% dplyr::select(-c(2:4)) %>% mutate(model = "iSDM
 ISDM_spatiotemporal <- ISDM_spatiotemporal %>% dplyr::select(-c(2:4)) %>% mutate(model = "iSDM Seasonal")
 colnames(ISDM_spatial) <- colnames(BRT_ensemble)
 colnames(ISDM_spatiotemporal) <- colnames(BRT_ensemble)
+colnames(BRT_pooling) <- colnames(BRT_ensemble)
 all <- rbind(BRT_ensemble, BRT_pooling, ISDM_spatial, ISDM_spatiotemporal) %>% 
             mutate(eval = case_when(eval == "etag" ~ "Eletronic Tag",
                                     eval == "marker" ~ "Marker",
