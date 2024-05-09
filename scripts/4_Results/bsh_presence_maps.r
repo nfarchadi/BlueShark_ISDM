@@ -22,7 +22,7 @@ etag <- here("data","bsh_data","bsh_etag_enhanced.rds") %>% # or here("data","bs
             readRDS() %>%
             dplyr::select(-X,-Y) %>% 
             sf::st_drop_geometry() %>% 
-            filter(pres_abs == 1) %>% unique() %>% nrow()
+            filter(pres_abs == 1) %>% unique() %>%
             mutate(lon = floor(lon/res) * res + 0.5 * res, 
                    lat = floor(lat/res) * res + 0.5 * res) %>%
             group_by(lon,lat) %>% 
@@ -49,17 +49,19 @@ marker <- here("data","bsh_data","bsh_marker_enhanced.rds") %>% # or here("data"
 # observer
 ##########
 
-observer <- here("data","bsh_data","bsh_observer_enhanced.rds") %>% # or here("data","bsh_data","bsh_observer_enhanced_seasonal.rds")
-            readRDS() %>%
-            dplyr::select(-X,-Y) %>% 
-            sf::st_drop_geometry() %>% 
-            filter(pres_abs == 1) %>% unique() %>% 
-            mutate(lon = floor(lon/res) * res + 0.5 * res, 
-                   lat = floor(lat/res) * res + 0.5 * res) %>%
-            group_by(lon,lat) %>% 
-            summarise(presence = sum(pres_abs, na.rm = T), .groups = "drop") %>% 
-            mutate(data = "Observer") %>% 
-            filter(presence >= 3)
+observer <-  here("data","bsh_data","observer-enhanced_pseudo_1to1.csv") %>% 
+              read.csv() %>%
+              # dplyr::select(-X,-Y) %>% 
+              filter(pres == 1) %>% 
+              unique() %>% 
+              mutate(lon = floor(lon/res) * res + 0.5 * res, 
+                     lat = floor(lat/res) * res + 0.5 * res) %>%
+              group_by(lon,lat) %>% 
+              summarise(presence = sum(pres, na.rm = T), 
+                         unique_Vessels = n_distinct(POP_VESSEL_CODE), .groups = "drop") %>% 
+              mutate(data = "Observer") %>% 
+              filter(unique_Vessels >= 3) %>% 
+              dplyr::select(-unique_Vessels)
 
 
 bsh_all <- rbind(etag, marker, observer) %>% 
