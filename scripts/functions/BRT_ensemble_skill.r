@@ -81,7 +81,7 @@ BRT_ensemble_skill <- function(dataInput, gbm.x, gbm.y, learning.rate = 0.05, k_
       t2 <- Sys.time()
       t3 <- difftime(t2,t1, units = c("mins"))
       
-      preds_Ensemble <- rowMeans(cbind(preds_etag,preds_etag,preds_observer), na.rm = TRUE)
+      preds_Ensemble <- rowMeans(cbind(preds_etag, preds_marker, preds_observer), na.rm = TRUE)
       
       
       
