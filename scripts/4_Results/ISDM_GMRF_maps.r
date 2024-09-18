@@ -33,7 +33,11 @@ theme_bw() +
 cmocean::scale_fill_cmocean(name = "thermal") + 
 labs(x = "", y = "", fill = "Mean") +
 guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
-                             barwidth = 1, barheight = 15))
+                             barwidth = 1, barheight = 15)) +
+theme(axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      legend.title = element_text(size = 15))
 
 ggsave(here("plots","ISDM_spatial_GMRF.png"),
        width = 7, height = 5, units = "in", dpi = 300)
@@ -65,7 +69,11 @@ theme(strip.text = element_text(size = 15),
 cmocean::scale_fill_cmocean(name = "thermal") + 
 labs(x = "", y = "", fill = "Mean") +
 guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
-                             barwidth = 1, barheight = 15))
+                             barwidth = 1, barheight = 15)) +
+theme(axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      legend.title = element_text(size = 15))
 
 
 ggsave(here("plots","ISDM_spatiotemporal_GMRF.png"),
@@ -126,7 +134,11 @@ ISDM_spatial_diff_plot <- ISDM_GMRF_diff %>%
     cmocean::scale_fill_cmocean(name = "balance", values = scales::rescale(c(-7.5, -4.5, 0, 1.5, 4.5))) + 
     labs(x = "", y = "", fill = "Difference") +
 guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black",
-                             barwidth = 1, barheight = 15))
+                             barwidth = 1, barheight = 15)) +
+theme(axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      legend.title = element_text(size = 15))
 
 ggsave(here("plots","ISDM_GMRF_diff.png"),
        width = 6, height = 10, units = "in", dpi = 300)

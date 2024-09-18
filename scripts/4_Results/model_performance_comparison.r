@@ -24,11 +24,11 @@ colnames(ISDM_spatial) <- colnames(BRT_ensemble)
 colnames(ISDM_spatiotemporal) <- colnames(BRT_ensemble)
 colnames(BRT_pooling) <- colnames(BRT_ensemble)
 all <- rbind(BRT_ensemble, BRT_pooling, ISDM_spatial, ISDM_spatiotemporal) %>% 
-            mutate(eval = case_when(eval == "etag" ~ "Eletronic Tag",
+            mutate(eval = case_when(eval == "etag" ~ "Electronic Tag",
                                     eval == "marker" ~ "Marker",
                                     eval == "observer" ~ "Observer",
                                     eval == "all" ~ "all"),
-                   eval = factor(eval, levels = c("Marker", "Observer", "Eletronic Tag"))) %>% 
+                   eval = factor(eval, levels = c("Marker", "Observer", "Electronic Tag"))) %>% 
             filter(eval != "all")
    
             
@@ -81,9 +81,9 @@ theme(legend.position = "none")
 # linear regression to explore relationship between AUC and Computational Demand
 summary(lm(AUC ~ time, data = all %>% filter(eval == "Marker")))
 summary(lm(AUC ~ time, data = all %>% filter(eval == "Observer")))
-summary(lm(AUC ~ time, data = all %>% filter(eval == "Eletronic Tag")))
+summary(lm(AUC ~ time, data = all %>% filter(eval == "Electronic Tag")))
 
-PredSkill / EcoReal / CompDemand + plot_annotation(tag_levels = 'A') & 
+PredSkill / EcoReal / CompDemand + plot_annotation(tag_levels = 'a') & 
   theme(plot.tag = element_text(size = 8))
 
 ggsave(here("plots","ModelPreformanceAnalysis.png"),
@@ -162,11 +162,11 @@ summary(effect_size_aov)
 TukeyHSD(effect_size_aov)
 
 # Have the EcoReal_ratio plot and Effects size in the same figure
-effect_size + EcoReal_ratio + plot_annotation(tag_levels = 'A') & 
+effect_size + EcoReal_ratio + plot_annotation(tag_levels = 'a') & 
   theme(plot.tag = element_text(size = 10))
 
 ggsave(here("plots","EffectSizePredictiveSkill_EcologicalRealism.png"),
-       width = 15, height = 6, units = "in", dpi = 300)
+       width = 12, height = 7, units = "in", dpi = 300)
 
 
 
@@ -193,11 +193,11 @@ colnames(ISDM_spatial) <- colnames(BRT_ensemble)
 colnames(ISDM_spatiotemporal) <- colnames(BRT_ensemble)
 colnames(BRT_pooling) <- colnames(BRT_ensemble)
 all <- rbind(BRT_ensemble, BRT_pooling, ISDM_spatial, ISDM_spatiotemporal) %>% 
-            mutate(eval = case_when(eval == "etag" ~ "Eletronic Tag",
+            mutate(eval = case_when(eval == "etag" ~ "Electronic Tag",
                                     eval == "marker" ~ "Marker",
                                     eval == "observer" ~ "Observer",
                                     eval == "all" ~ "all"),
-                   eval = factor(eval, levels = c("Marker", "Observer", "Eletronic Tag"))) %>% 
+                   eval = factor(eval, levels = c("Marker", "Observer", "Electronic Tag"))) %>% 
             filter(eval != "all")
    
             
@@ -252,10 +252,10 @@ theme(legend.position = "none")
 # linear regression to explore relationship between AUC and Computational Demand
 summary(lm(AUC ~ time, data = all %>% filter(eval == "Marker")))
 summary(lm(AUC ~ time, data = all %>% filter(eval == "Observer")))
-summary(lm(AUC ~ time, data = all %>% filter(eval == "Eletronic Tag")))
+summary(lm(AUC ~ time, data = all %>% filter(eval == "Electronic Tag")))
 
 
-PredSkill_downsampled / EcoReal_downsampled / CompDemand_downsampled + plot_annotation(tag_levels = 'A') & 
+PredSkill_downsampled / EcoReal_downsampled / CompDemand_downsampled + plot_annotation(tag_levels = 'a') & 
   theme(plot.tag = element_text(size = 8))
 
 ggsave(here("plots","ModelPreformanceAnalysis_downsampled.png"),
@@ -334,11 +334,11 @@ summary(effect_size_aov)
 TukeyHSD(effect_size_aov)
 
 # Have the EcoReal_ratio_downsampled plot and effect_size_downsampled in the same figure
-effect_size_downsampled + EcoReal_ratio_downsampled + plot_annotation(tag_levels = 'A') & 
+effect_size_downsampled + EcoReal_ratio_downsampled + plot_annotation(tag_levels = 'a') & 
   theme(plot.tag = element_text(size = 10))
 
 ggsave(here("plots","EffectSizePredictiveSkill_EcologicalRealism_downsampled.png"),
-       width = 15, height = 6, units = "in", dpi = 300)
+       width = 12, height = 7, units = "in", dpi = 300)
 
 
 
