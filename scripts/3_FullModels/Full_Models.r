@@ -143,28 +143,28 @@ bsh_all <- rbind(etag %>% dplyr::select(-c(longitudeError, latitudeError)), mark
 
 
 
-# ############
-# # downsample
-# ############
-# set.seed(24)
-# # which has the smallest dataset and downsample the data to that number
-# bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
+############
+# downsample
+############
+set.seed(24)
+# which has the smallest dataset and downsample the data to that number
+bsh_all %>% filter(pres_abs == 1) %>% group_by(dataset) %>% summarise(total = n()) #observer with 7994
 
-# bsh_all <- bsh_all %>%
-#   group_by(pres_abs,dataset) %>% 
-#   nest() %>% 
-#   ungroup() %>%
-#   mutate(count = 500)
+bsh_all <- bsh_all %>%
+  group_by(pres_abs,dataset) %>% 
+  nest() %>% 
+  ungroup() %>%
+  mutate(count = 7994)
   
-# # sample by n for each nested group
-# bsh_all <- bsh_all %>%
-#   mutate(samp = map2(data, count, sample_n))
+# sample by n for each nested group
+bsh_all <- bsh_all %>%
+  mutate(samp = map2(data, count, sample_n))
 
-# # unnest the dataframe back
-# bsh_all <- bsh_all %>% 
-#   dplyr::select(-data, -count) %>%
-#   unnest(samp) %>%
-#   mutate(pres_abs = as.integer(pres_abs)) %>% unique()
+# unnest the dataframe back
+bsh_all <- bsh_all %>% 
+  dplyr::select(-data, -count) %>%
+  unnest(samp) %>%
+  mutate(pres_abs = as.integer(pres_abs)) %>% unique()
   
 
 
@@ -187,12 +187,12 @@ collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity)
 # source(here("scripts","functions", "BRT_ensemble_fullmodel.r"))
 
 # bsh_ensemble <- BRT_ensemble_fullmodel(dataInput = bsh_all, 
-#                             gbm.x = c(8,13,16), # make sure this is right!
+#                             gbm.x = c(9,14,17), # make sure this is right!
 #                             gbm.y=1, learning.rate = 0.005, 
 #                             bag.fraction = 0.75, tree.complexity = 5,
 #                             n_trees = 2000)
 
-# saveRDS(bsh_ensemble, here("results","BRT_ensemble_fullmodel.rds"))
+# saveRDS(bsh_ensemble, here("results","BRT_ensemble_fullmodel_downsampled.rds"))
 # print("BRT ensemble done")
 
 # #############
@@ -201,30 +201,30 @@ collinearity(na.omit(bsh_all %>% as.data.frame() %>% dplyr::select(sst:rugosity)
 # source(here("scripts","functions", "BRT_pooling_fullmodel.r"))
 
 # bsh_pooling <- BRT_pooling_fullmodel(dataInput = bsh_all, 
-#                             gbm.x = c(8,13,16), # make sure this is right!
+#                             gbm.x = c(9,14,17), # make sure this is right!
 #                             gbm.y=1, learning.rate = 0.005, 
 #                             bag.fraction = 0.75, tree.complexity = 5,
 #                             n_trees = 2000)
 
-# saveRDS(bsh_pooling, here("results","BRT_pooling_fullmodel.rds"))
+# saveRDS(bsh_pooling, here("results","BRT_pooling_fullmodel_downsampled.rds"))
 # print("BRT pooling done")
 
-# ##############
-# # ISDM Spatial
-# ##############
-# # this code will just retrieve and save the data for the marginal effects (ME), GMRF, and spatial predictions because model is too big to save
+##############
+# ISDM Spatial
+##############
+# this code will just retrieve and save the data for the marginal effects (ME), GMRF, and spatial predictions because model is too big to save
 
-# source(here("scripts","functions", "INLA_spatial_fullmodel.r"))
+source(here("scripts","functions", "INLA_spatial_fullmodel.r"))
 
-# bsh_ISDM_spatial <- INLA_spatial_fullmodel(dataInput = bsh_all_scaled, 
-#                             inla.x = c(8,13,16), # make sure this is right! 
-#                             inla.y=1,
-#                             shp = NWA,
-#                             cores = 20, n_samples = 1000,
-#                             env_data = GLORYS_NWA)
+bsh_ISDM_spatial <- INLA_spatial_fullmodel(dataInput = bsh_all_scaled, 
+                            inla.x = c(8,13,16), # make sure this is right! 
+                            inla.y=1,
+                            shp = NWA,
+                            cores = 20, n_samples = 1000,
+                            env_data = GLORYS_NWA)
 
 
-# saveRDS(bsh_ISDM_spatial, here("results","bsh_ISDM_spatial_ME_GMRF_preds.rds"))
+saveRDS(bsh_ISDM_spatial, here("results","bsh_ISDM_spatial_ME_GMRF_preds_downsampled.rds"))
 
 #####################
 # ISDM Spatiotemporal
@@ -240,4 +240,4 @@ bsh_ISDM_spatiotemporal <- INLA_spatiotemporal_fullmodel(dataInput = bsh_all_sca
                             cores = 20, n_samples = 1000,
                             env_data = GLORYS_NWA)
 
-saveRDS(bsh_ISDM_spatiotemporal, here("results","bsh_ISDM_spatiotemporal_ME_GMRF_preds.rds"))
+saveRDS(bsh_ISDM_spatiotemporal, here("results","bsh_ISDM_spatiotemporal_ME_GMRF_preds_downsampled.rds"))
