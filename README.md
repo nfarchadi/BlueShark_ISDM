@@ -2,7 +2,7 @@
 
 This repository contains data and code to:
 
-1. run cross-validation for each integration approach (data pooling, ensemble, integrated SDM with constant spatial effect, and integrated SDM with seasonal spatial effects) and measure performance metrics (predictive skill & computational demand).
+1. Run cross-validation for each integration approach (data pooling, ensemble, integrated SDM with constant spatial effect, and integrated SDM with seasonal spatial effects) and measure performance metrics (predictive skill & computational demand).
 2. Develop full models for each integration approach using all the data.
 3. Figures from the manuscript.
 
@@ -10,7 +10,7 @@ The data in this repository represent blue shark presence and pseudo-absences th
 
 **NOTE:**  The data provided here are randomly sampled versions of each dataset, equal in size, and are intended as examples. Users should be aware that results will differ from those presented in the manuscript, which used the full and downsampled datasets. 
 
-The full versions of each can be accessed or requested by the data providers. Specifically, marker tag data used in this research are publicly available from the International Commission for the Conservation of Atlantic Tunas (ICCAT) Secretariat tag database at https://iccat. int/en/accesingdb.html, under “BSH” in the “Tagging” section. The fishery dependent observer dataset used in this study are considered confidential under the U.S. Magnuson-Stevens Act: qualified researchers may request these data from the NOAA Pelagic Observer Program office by contacting [popobserver@noaa.gov](mailto:popobserver@noaa.gov); we requested data representing all pelagic longline sets between the years 1993 and 2019. The eletronic data used in this study belong to multiple contributing authors. Interested users should contact the corresponding author to facilitate communication with the data contributors.
+The full versions of each can be accessed or requested by the data providers. Specifically, marker tag data used in this research are publicly available from the International Commission for the Conservation of Atlantic Tunas (ICCAT) Secretariat tag database at https://iccat.int/en/accesingdb.html, under “BSH” in the “Tagging” section. The fishery dependent observer dataset used in this study are considered confidential under the U.S. Magnuson-Stevens Act: qualified researchers may request these data from the NOAA Pelagic Observer Program office by contacting [popobserver@noaa.gov](mailto:popobserver@noaa.gov); we requested data representing all pelagic longline sets between the years 1993 and 2019. The eletronic data used in this study belong to multiple contributing authors. Interested users should contact the corresponding author to facilitate communication with the data contributors.
 
 
 ## Description of the data and file structure
@@ -37,7 +37,7 @@ Details for: `bsh_data_subset.csv`
 
 Details for: `ModelPerformanceAnalysis`
 
-* Description: contains all code to run the cross-validation to evaluate model performance for each integration approach. Scripts in the folder call on functions from the `functions` folder to run analyses
+* Description: contains all R code to run the cross-validation to evaluate model performance for each integration approach. Scripts in the folder call on functions from the `functions` folder to run analyses.
   * `BRT_Ensemble_Pooling_Analysis.r` - runs cross-validation for BRT data pooling and ensemble model approaches
   * `iSDM_Constant_Analysis.r` - runs cross-validation for iSDM constant model
   * `iSDM_Seasonal_Analysis.r` - runs cross-validation for iSDM seasonal model
@@ -57,6 +57,8 @@ Environmental data was derived from the following sources:
 
 * GLORYS oceanographic data: [https://data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030/description](https://data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030/description)
 * Bathymetry: [https://www.ngdc.noaa.gov/mgg/global/global.html](https://www.ngdc.noaa.gov/mgg/global/global.html)
+
+**NOTE:** Gridded GLORYS and Bathymetry environmental data for the North Atlantic for September 2014 can be found in the data folder
 
 ## Code/Software
 
