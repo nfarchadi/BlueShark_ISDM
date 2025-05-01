@@ -1,6 +1,6 @@
 # Data and code for "Integrating diverse marine predator data for robust species distribution models in a dynamic ocean"
 
-*The study is currently in review*
+*This study is currently in review*
 
 This repository contains data and code to:
 
@@ -70,4 +70,4 @@ Model performance analysis was conducted in R version 4.2.3 on the University of
 
 ## Questions and Feedback
 
-If you encounter with any problems or error, please create an issue here. Starting an issue will help others trying to use this code. Any other questions please contact the corresponding author, N. Farchad (nfarchadi@sdsu.edu)
+If you encounter with any problems or error, please create an issue here. Starting an issue will help others trying to use this code. Any other questions please contact the corresponding author, N. Farchadi (nfarchadi@sdsu.edu)
