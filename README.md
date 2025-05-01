@@ -1,4 +1,6 @@
-# Data and code for the article "Integrating diverse data for robust species distribution models in a dynamic ocean"
+# Data and code for "Integrating diverse marine predator data for robust species distribution models in a dynamic ocean"
+
+*The study is currently in review*
 
 This repository contains data and code to:
 
@@ -65,3 +67,7 @@ Environmental data was derived from the following sources:
 Model performance analysis was conducted in R version 4.2.3 on the University of California, Davis high-performance computing cluster, Farm ([https://hpc.ucdavis.edu/farm-cluster](https://hpc.ucdavis.edu/farm-cluster)). Model fitting for pooling and ensemble approaches were conducted using default computational specifications in R without explicit user-defined alterations to CPU cores (i.e. 1 CPU core utilized) or RAM. For both iSDMs, model fitting during cross-validation was run in parallel on 20 CPUs with 2 GB of memory per CPU on a single node. 
 
 **NOTE:** These specifications apply to the full datasets; computational demands will differ when using the subsetted datasets provided in this repository.
+
+## Questions and Feedback
+
+If you encounter with any problems or error, please create an issue here. Starting an issue will help others trying to use this code. Any other questions please contact the corresponding author, N. Farchad (nfarchadi@sdsu.edu)
