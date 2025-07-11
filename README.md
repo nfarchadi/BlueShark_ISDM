@@ -1,6 +1,5 @@
 # Data and code for "Integrating diverse marine predator data for robust species distribution models in a dynamic ocean"
-
-*This study is currently in review*
+DOI: 10.1093/icesjms/fsaf110
 
 This repository contains data and code to:
 
