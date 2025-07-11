@@ -9,7 +9,7 @@ This repository contains data and code to:
 
 The data in this repository represent blue shark presence and pseudo-absences throughout the North Atlantic, used to construct the different integration approaches presented in the paper. Each of the datasets have about 1:1 presence:pseudo-absence ratio. 
 
-**NOTE:**  The data provided here are randomly sampled versions of each dataset, equal in size, and are intended as examples. Users should be aware that results will differ from those presented in the manuscript, which used the full and downsampled datasets. 
+**NOTE:**  The data provided here are simulated versions of each dataset, equal in size, and are intended as examples. Users should be aware that results will differ from those presented in the manuscript, which used the full and downsampled datasets. 
 
 The full versions of each can be accessed or requested by the data providers. Specifically, marker tag data used in this research are publicly available from the International Commission for the Conservation of Atlantic Tunas (ICCAT) Secretariat tag database at https://iccat.int/en/accesingdb.html, under “BSH” in the “Tagging” section. The fishery dependent observer dataset used in this study are considered confidential under the U.S. Magnuson-Stevens Act: qualified researchers may request these data from the NOAA Pelagic Observer Program office by contacting [popobserver@noaa.gov](mailto:popobserver@noaa.gov); we requested data representing all pelagic longline sets between the years 1993 and 2019. The electronic tag data used in this study belongs to multiple contributing authors. Interested users should contact the corresponding author to facilitate communication with the data contributors.
 
